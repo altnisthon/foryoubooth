@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Snapbooth</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-dot"></span>
+        <span>Snapbooth</span>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tab-btn is-active" data-view="booth">Booth</button>
+        <button class="tab-btn" data-view="gallery">Gallery</button>
+        <button class="tab-btn" data-view="templates">Templates</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- BOOTH VIEW -->
+      <section class="view" id="view-booth">
+        <div class="booth-layout">
+          <div class="stage">
+            <div class="camera-frame">
+              <video id="video" autoplay playsinline muted></video>
+              <canvas id="workCanvas" class="hidden"></canvas>
+              <div class="flash" id="flash"></div>
+              <div class="countdown" id="countdown"></div>
+              <div class="shot-progress" id="shotProgress"></div>
+              <div class="cam-toggle">
+                <button id="switchCamBtn" title="Switch camera">⟲</button>
+              </div>
+            </div>
+
+            <div class="controls">
+              <div class="picker">
+                <label>Strip design</label>
+                <select id="stripSelect"><option value="">Classic (default)</option></select>
+              </div>
+              <div class="picker">
+                <label>Photo overlay</label>
+                <select id="frameSelect"><option value="">None</option></select>
+              </div>
+              <button id="startBtn" class="btn-primary">Start Session</button>
+            </div>
+          </div>
+
+          <div class="printer-column">
+            <div class="printer">
+              <div class="printer-slot"></div>
+              <div class="printer-face">
+                <div class="printer-lights"><span></span><span></span><span></span></div>
+                <div class="printer-label">SNAPBOOTH · INSTANT</div>
+              </div>
+              <div class="strip-outlet" id="stripOutlet">
+                <div class="strip-print" id="stripPrint">
+                  <img id="stripImg" alt="Your photo strip" />
+                </div>
+              </div>
+            </div>
+            <div class="result-actions hidden" id="resultActions">
+              <button id="downloadBtn" class="btn-primary">Download</button>
+              <button id="retakeBtn" class="btn-secondary">New Session</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- GALLERY VIEW -->
+      <section class="view hidden" id="view-gallery">
+        <h2>Past strips</h2>
+        <div class="gallery-grid" id="galleryGrid"></div>
+        <p class="empty-note hidden" id="galleryEmpty">No strips yet — take your first session in the Booth tab.</p>
+      </section>
+
+      <!-- TEMPLATES VIEW -->
+      <section class="view hidden" id="view-templates">
+        <div class="template-tabs">
+          <button class="ttab-btn is-active" data-ttab="strips">Strip designs</button>
+          <button class="ttab-btn" data-ttab="frames">Photo overlays</button>
+        </div>
+
+        <div class="ttab-panel" id="panel-strips">
+          <form id="stripForm" class="template-form">
+            <h3>Add a strip design</h3>
+            <p class="hint">Upload the full background art for the strip. Photos are placed into evenly spaced slots you define below.</p>
+            <div class="form-grid">
+              <label>Name <input type="text" name="name" placeholder="e.g. Retro Diner" required /></label>
+              <label>Background image (PNG/JPG) <input type="file" name="image" accept="image/*" required /></label>
+              <label>Canvas width (px) <input type="number" name="width" value="600" min="100" /></label>
+              <label>Canvas height (px) <input type="number" name="height" value="1800" min="100" /></label>
+              <label>Number of photos <input type="number" name="photoCount" value="3" min="1" max="6" /></label>
+              <label>Side margin (px) <input type="number" name="marginX" value="40" min="0" /></label>
+              <label>Top margin (px) <input type="number" name="marginTop" value="40" min="0" /></label>
+              <label>Bottom margin (px) <input type="number" name="marginBottom" value="220" min="0" /></label>
+              <label>Gap between photos (px) <input type="number" name="gap" value="24" min="0" /></label>
+            </div>
+            <button type="submit" class="btn-primary">Add strip design</button>
+          </form>
+          <div class="template-grid" id="stripGrid"></div>
+        </div>
+
+        <div class="ttab-panel hidden" id="panel-frames">
+          <form id="frameForm" class="template-form">
+            <h3>Add a photo overlay</h3>
+            <p class="hint">Upload a transparent PNG (washi tape, border, logo, date stamp) drawn over every captured photo.</p>
+            <div class="form-grid">
+              <label>Name <input type="text" name="name" placeholder="e.g. Gold Foil Border" required /></label>
+              <label>Overlay image (transparent PNG) <input type="file" name="image" accept="image/png" required /></label>
+            </div>
+            <button type="submit" class="btn-primary">Add overlay</button>
+          </form>
+          <div class="template-grid" id="frameGrid"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

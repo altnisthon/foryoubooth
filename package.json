@@ -1,0 +1,14 @@
+{
+  "name": "photobooth-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.6.1",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2"
+  }
+}
