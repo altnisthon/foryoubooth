@@ -25,7 +25,7 @@
 
   // ---------- Owner access ----------
 
-  const AUTH_STORAGE_KEY = 'snapbooth_admin_pw';
+  const AUTH_STORAGE_KEY = 'foryouboo_admin_pw';
   let adminPw = localStorage.getItem(AUTH_STORAGE_KEY) || null;
 
   function isAdmin() { return !!adminPw; }
@@ -95,8 +95,8 @@
     name: 'Classic',
     url: null,
     width: 640,
-    height: 1880,
-    photoCount: 3,
+    height: 2000,
+    photoCount: 4,
     slots: null, // computed below
   };
 
@@ -108,7 +108,7 @@
   let currentStripUrl = null;
 
   function computeSlots(cfg) {
-    const marginX = 40, marginTop = 40, marginBottom = 220, gap = 24;
+    const marginX = 40, marginTop = 110, marginBottom = 130, gap = 20;
     const slotW = cfg.width - marginX * 2;
     const availableH = cfg.height - marginTop - marginBottom - gap * (cfg.photoCount - 1);
     const slotH = Math.max(10, Math.floor(availableH / cfg.photoCount));
@@ -119,6 +119,156 @@
     return slots;
   }
   DEFAULT_STRIP.slots = computeSlots(DEFAULT_STRIP);
+
+  // ---------- Classic strip rendering (pastel gradient + illustrated placeholders) ----------
+
+  async function ensureBrandFont() {
+    try {
+      await Promise.all([
+        document.fonts.load('800 34px "Baloo 2"'),
+        document.fonts.load('800 30px "Baloo 2"'),
+      ]);
+    } catch {
+      // Font failed to load in time; canvas text will fall back silently.
+    }
+  }
+
+  function roundedRectPath(ctx, x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
+  }
+
+  function drawCloud(ctx, cx, cy, r) {
+    ctx.beginPath();
+    ctx.arc(cx - r * 0.6, cy, r * 0.6, 0, Math.PI * 2);
+    ctx.arc(cx, cy - r * 0.3, r * 0.75, 0, Math.PI * 2);
+    ctx.arc(cx + r * 0.65, cy, r * 0.6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function drawHill(ctx, x, y, w, h, baseFrac, waveFrac) {
+    const baseY = y + h * baseFrac;
+    ctx.beginPath();
+    ctx.moveTo(x, y + h);
+    ctx.lineTo(x, baseY + h * waveFrac * 0.3);
+    ctx.bezierCurveTo(
+      x + w * 0.25, baseY - h * waveFrac,
+      x + w * 0.5, baseY + h * waveFrac,
+      x + w * 0.78, baseY - h * waveFrac * 0.4
+    );
+    ctx.bezierCurveTo(
+      x + w * 0.9, baseY - h * waveFrac * 0.7,
+      x + w * 0.97, baseY,
+      x + w, baseY + h * waveFrac * 0.2
+    );
+    ctx.lineTo(x + w, y + h);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawPlaceholderScene(ctx, x, y, w, h) {
+    ctx.save();
+    roundedRectPath(ctx, x, y, w, h, 14);
+    ctx.clip();
+
+    const sky = ctx.createLinearGradient(0, y, 0, y + h);
+    sky.addColorStop(0, '#bfe3fb');
+    sky.addColorStop(1, '#eef8ff');
+    ctx.fillStyle = sky;
+    ctx.fillRect(x, y, w, h);
+
+    ctx.fillStyle = '#ffffff';
+    drawCloud(ctx, x + w * 0.16, y + h * 0.22, w * 0.075);
+    drawCloud(ctx, x + w * 0.52, y + h * 0.17, w * 0.13);
+
+    ctx.fillStyle = '#c7e28a';
+    drawHill(ctx, x, y, w, h, 0.62, 0.12);
+    ctx.fillStyle = '#8fbf2f';
+    drawHill(ctx, x, y, w, h, 0.74, 0.16);
+
+    ctx.restore();
+  }
+
+  async function composeClassicCanvas(strip, shots, frameImg) {
+    const canvas = document.createElement('canvas');
+    canvas.width = strip.width;
+    canvas.height = strip.height;
+    const ctx = canvas.getContext('2d');
+
+    const bg = ctx.createLinearGradient(0, 0, strip.width, strip.height);
+    bg.addColorStop(0, '#ffe3ea');
+    bg.addColorStop(0.5, '#fff3e6');
+    bg.addColorStop(1, '#efe6fb');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, strip.width, strip.height);
+
+    await ensureBrandFont();
+    ctx.fillStyle = '#4a2f42';
+    ctx.textAlign = 'center';
+    ctx.font = '800 34px "Baloo 2", sans-serif';
+    ctx.fillText('ForYouBoo', strip.width / 2, 60);
+
+    for (let i = 0; i < strip.photoCount; i++) {
+      const slot = strip.slots[i];
+      const shot = shots && shots[i];
+      if (shot) {
+        const tmp = document.createElement('canvas');
+        tmp.width = slot.w;
+        tmp.height = slot.h;
+        tmp.getContext('2d').putImageData(shot, 0, 0);
+        ctx.save();
+        roundedRectPath(ctx, slot.x, slot.y, slot.w, slot.h, 14);
+        ctx.clip();
+        ctx.drawImage(tmp, slot.x, slot.y, slot.w, slot.h);
+        ctx.restore();
+      } else {
+        drawPlaceholderScene(ctx, slot.x, slot.y, slot.w, slot.h);
+      }
+      if (frameImg) {
+        ctx.drawImage(frameImg, slot.x, slot.y, slot.w, slot.h);
+      }
+    }
+
+    ctx.fillStyle = '#4a2f42';
+    ctx.font = '800 30px "Baloo 2", sans-serif';
+    ctx.fillText('ForYouBoo', strip.width / 2, strip.height - 42);
+
+    return canvas;
+  }
+
+  async function renderIdlePreview() {
+    const stripId = stripSelect.value;
+    const strip = stripId ? strips.find((s) => s.id === stripId) : DEFAULT_STRIP;
+    const frameId = frameSelect.value;
+    const frame = frameId ? frames.find((f) => f.id === frameId) : null;
+
+    let canvas;
+    try {
+      const frameImg = frame ? await loadImage(frame.url) : null;
+      if (strip.url) {
+        const img = await loadImage(strip.url);
+        canvas = document.createElement('canvas');
+        canvas.width = strip.width;
+        canvas.height = strip.height;
+        canvas.getContext('2d').drawImage(img, 0, 0, strip.width, strip.height);
+      } else {
+        canvas = await composeClassicCanvas(strip, null, frameImg);
+      }
+    } catch {
+      return;
+    }
+
+    stripImg.src = canvas.toDataURL('image/png');
+    stripPrint.classList.remove('printing', 'done');
+    stripPrint.classList.add('idle');
+    stripPrint.style.clipPath = 'inset(0 0 0 0)';
+  }
 
   // ---------- Camera ----------
 
@@ -142,6 +292,9 @@
     startCamera();
   });
 
+  stripSelect.addEventListener('change', renderIdlePreview);
+  frameSelect.addEventListener('change', renderIdlePreview);
+
   // ---------- Template loading ----------
 
   async function loadTemplates() {
@@ -159,6 +312,7 @@
 
     renderTemplateGrid('stripGrid', strips, 'strips', true);
     renderTemplateGrid('frameGrid', frames, 'frames', false);
+    renderIdlePreview();
   }
 
   function escapeHtml(s) {
@@ -279,7 +433,7 @@
     grid.querySelectorAll('.gallery-item').forEach((a) => {
       a.addEventListener('click', (e) => {
         e.preventDefault();
-        downloadRemote(a.dataset.url, `snapbooth-${Date.now()}.png`);
+        downloadRemote(a.dataset.url, `foryouboo-${Date.now()}.png`);
       });
     });
   }
@@ -372,7 +526,7 @@
     const frameImg = frame ? await loadImage(frame.url) : null;
 
     resultActions.classList.add('hidden');
-    stripPrint.classList.remove('printing', 'done');
+    stripPrint.classList.remove('idle', 'printing', 'done');
     stripPrint.style.clipPath = 'inset(0 0 100% 0)';
     buildShotProgress(strip.photoCount);
 
@@ -390,39 +544,32 @@
     }
 
     // Composite final strip.
-    const outCanvas = document.createElement('canvas');
-    outCanvas.width = strip.width;
-    outCanvas.height = strip.height;
-    const ctx = outCanvas.getContext('2d');
-
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, strip.width, strip.height);
-
+    let outCanvas;
     if (strip.url) {
+      outCanvas = document.createElement('canvas');
+      outCanvas.width = strip.width;
+      outCanvas.height = strip.height;
+      const ctx = outCanvas.getContext('2d');
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, strip.width, strip.height);
+
       const bg = await loadImage(strip.url);
       ctx.drawImage(bg, 0, 0, strip.width, strip.height);
-    }
 
-    for (let i = 0; i < strip.photoCount; i++) {
-      const slot = strip.slots[i];
-      const tmp = document.createElement('canvas');
-      tmp.width = slot.w;
-      tmp.height = slot.h;
-      tmp.getContext('2d').putImageData(shots[i], 0, 0);
-      ctx.drawImage(tmp, slot.x, slot.y, slot.w, slot.h);
-      if (frameImg) {
-        ctx.drawImage(frameImg, slot.x, slot.y, slot.w, slot.h);
+      for (let i = 0; i < strip.photoCount; i++) {
+        const slot = strip.slots[i];
+        const tmp = document.createElement('canvas');
+        tmp.width = slot.w;
+        tmp.height = slot.h;
+        tmp.getContext('2d').putImageData(shots[i], 0, 0);
+        ctx.drawImage(tmp, slot.x, slot.y, slot.w, slot.h);
+        if (frameImg) {
+          ctx.drawImage(frameImg, slot.x, slot.y, slot.w, slot.h);
+        }
       }
-    }
-
-    if (!strip.url) {
-      ctx.strokeStyle = '#e7e2ea';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(1, 1, strip.width - 2, strip.height - 2);
-      ctx.fillStyle = '#3a3346';
-      ctx.font = '600 26px -apple-system, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('snapbooth', strip.width / 2, strip.height - 100);
+    } else {
+      outCanvas = await composeClassicCanvas(strip, shots, frameImg);
     }
 
     const dataUrl = outCanvas.toDataURL('image/png');
@@ -452,7 +599,7 @@
     if (!currentStripUrl) return;
     const a = document.createElement('a');
     a.href = currentStripUrl;
-    a.download = `snapbooth-${Date.now()}.png`;
+    a.download = `foryouboo-${Date.now()}.png`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -460,9 +607,8 @@
 
   retakeBtn.addEventListener('click', () => {
     resultActions.classList.add('hidden');
-    stripPrint.classList.remove('printing', 'done');
-    stripPrint.style.clipPath = 'inset(0 0 100% 0)';
     shotProgressEl.innerHTML = '';
+    renderIdlePreview();
   });
 
   // ---------- Init ----------
