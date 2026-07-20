@@ -1,4 +1,5 @@
 (() => {
+  const topbar = document.getElementById('topbar');
   const video = document.getElementById('video');
   const workCanvas = document.getElementById('workCanvas');
   const workCtx = workCanvas.getContext('2d');
@@ -9,8 +10,10 @@
   const stripSelect = document.getElementById('stripSelect');
   const frameSelect = document.getElementById('frameSelect');
   const switchCamBtn = document.getElementById('switchCamBtn');
+  const backToLandingBtn = document.getElementById('backToLandingBtn');
+  const enterBoothBtn = document.getElementById('enterBoothBtn');
+  const resultHomeBtn = document.getElementById('resultHomeBtn');
 
-  const stripOutlet = document.getElementById('stripOutlet');
   const stripPrint = document.getElementById('stripPrint');
   const stripImg = document.getElementById('stripImg');
   const resultActions = document.getElementById('resultActions');
@@ -57,8 +60,7 @@
       localStorage.setItem(AUTH_STORAGE_KEY, pw);
       revealAdminTabs();
       closeAuthModal();
-      const templatesTab = document.querySelector('.tab-btn[data-view="templates"]');
-      if (templatesTab) templatesTab.click();
+      showView('templates');
     } else {
       authError.classList.remove('hidden');
     }
@@ -74,8 +76,7 @@
     adminPw = null;
     localStorage.removeItem(AUTH_STORAGE_KEY);
     document.querySelectorAll('.admin-tab').forEach((b) => b.classList.add('hidden'));
-    const boothTab = document.querySelector('.tab-btn[data-view="booth"]');
-    if (boothTab) boothTab.click();
+    showView('landing');
     alert('Owner session expired or password changed. Reopen with ?admin=1 to unlock again.');
   }
 
@@ -85,27 +86,94 @@
   }
 
   if (isAdmin()) revealAdminTabs();
+
+  // ---------- View navigation ----------
+
+  const BOOTH_VIEWS = new Set(['landing', 'camera', 'result']);
+
+  function showView(name) {
+    document.querySelectorAll('.view').forEach((v) => v.classList.add('hidden'));
+    document.getElementById(`view-${name}`).classList.remove('hidden');
+    topbar.classList.toggle('hidden', name === 'landing');
+    document.querySelectorAll('.tab-btn').forEach((b) => {
+      const match = b.dataset.view === name || (b.dataset.view === 'landing' && BOOTH_VIEWS.has(name));
+      b.classList.toggle('is-active', match);
+    });
+    if (name === 'gallery') loadGallery();
+  }
+
+  document.querySelectorAll('.tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.view === 'landing') {
+        showView('landing');
+      } else {
+        showView(btn.dataset.view);
+      }
+    });
+  });
+
+  document.querySelectorAll('.ttab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.ttab-btn').forEach((b) => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+      document.querySelectorAll('.ttab-panel').forEach((p) => p.classList.add('hidden'));
+      document.getElementById(`panel-${btn.dataset.ttab}`).classList.remove('hidden');
+    });
+  });
+
+  enterBoothBtn.addEventListener('click', () => {
+    showView('camera');
+    startCamera();
+    shotProgressEl.innerHTML = '';
+    startBtn.disabled = false;
+  });
+
+  backToLandingBtn.addEventListener('click', () => showView('landing'));
+  resultHomeBtn.addEventListener('click', () => showView('landing'));
+
   if (new URLSearchParams(location.search).get('admin') === '1') {
     history.replaceState(null, '', location.pathname);
+    showView('landing');
     openAuthModal();
   }
 
-  const DEFAULT_STRIP = {
-    id: '',
-    name: 'Classic',
-    url: null,
-    width: 640,
-    height: 2000,
-    photoCount: 4,
-    slots: null, // computed below
-  };
+  // ---------- Parallax ----------
 
-  let strips = [];
-  let frames = [];
-  let currentStream = null;
-  let facingMode = 'user';
-  let busy = false;
-  let currentStripUrl = null;
+  function initParallax() {
+    const blobs = document.querySelectorAll('.blob');
+    let ticking = false;
+    function apply() {
+      const y = window.scrollY;
+      blobs.forEach((b) => {
+        const speed = parseFloat(b.dataset.speed) || 0.2;
+        b.style.transform = `translateY(${y * speed}px)`;
+      });
+      ticking = false;
+    }
+    window.addEventListener('scroll', () => {
+      if (!ticking) {
+        requestAnimationFrame(apply);
+        ticking = true;
+      }
+    }, { passive: true });
+    apply();
+
+    const hero = document.querySelector('.landing');
+    if (hero && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      hero.addEventListener('mousemove', (e) => {
+        const rect = hero.getBoundingClientRect();
+        const relX = (e.clientX - rect.left) / rect.width - 0.5;
+        const relY = (e.clientY - rect.top) / rect.height - 0.5;
+        blobs.forEach((b, i) => {
+          const strength = (i + 1) * 8;
+          b.style.marginLeft = `${relX * strength}px`;
+          b.style.marginTop = `${relY * strength}px`;
+        });
+      });
+    }
+  }
+
+  // ---------- Built-in strip themes (Vanilla / Moonstone) ----------
 
   function computeSlots(cfg) {
     const marginX = 40, marginTop = 110, marginBottom = 130, gap = 20;
@@ -118,9 +186,28 @@
     }
     return slots;
   }
-  DEFAULT_STRIP.slots = computeSlots(DEFAULT_STRIP);
 
-  // ---------- Classic strip rendering (pastel gradient + illustrated placeholders) ----------
+  const BUILTIN_BASE = { width: 640, height: 2000, photoCount: 4 };
+  const BUILTIN_STRIPS = {
+    light: { id: '__light', name: 'ForYouBoo · Light', theme: 'light', url: null, ...BUILTIN_BASE, slots: computeSlots(BUILTIN_BASE) },
+    dark: { id: '__dark', name: 'ForYouBoo · Dark', theme: 'dark', url: null, ...BUILTIN_BASE, slots: computeSlots(BUILTIN_BASE) },
+  };
+
+  let strips = [];
+  let frames = [];
+  let currentStream = null;
+  let facingMode = 'user';
+  let busy = false;
+  let currentStripUrl = null;
+
+  function getSelectedStrip() {
+    const id = stripSelect.value;
+    if (id === '__dark') return BUILTIN_STRIPS.dark;
+    if (id && id !== '__light') return strips.find((s) => s.id === id) || BUILTIN_STRIPS.light;
+    return BUILTIN_STRIPS.light;
+  }
+
+  // ---------- Classic strip rendering (pastel gradient + minimal camera-icon placeholders) ----------
 
   async function ensureBrandFont() {
     try {
@@ -144,54 +231,40 @@
     ctx.closePath();
   }
 
-  function drawCloud(ctx, cx, cy, r) {
-    ctx.beginPath();
-    ctx.arc(cx - r * 0.6, cy, r * 0.6, 0, Math.PI * 2);
-    ctx.arc(cx, cy - r * 0.3, r * 0.75, 0, Math.PI * 2);
-    ctx.arc(cx + r * 0.65, cy, r * 0.6, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  function drawHill(ctx, x, y, w, h, baseFrac, waveFrac) {
-    const baseY = y + h * baseFrac;
-    ctx.beginPath();
-    ctx.moveTo(x, y + h);
-    ctx.lineTo(x, baseY + h * waveFrac * 0.3);
-    ctx.bezierCurveTo(
-      x + w * 0.25, baseY - h * waveFrac,
-      x + w * 0.5, baseY + h * waveFrac,
-      x + w * 0.78, baseY - h * waveFrac * 0.4
-    );
-    ctx.bezierCurveTo(
-      x + w * 0.9, baseY - h * waveFrac * 0.7,
-      x + w * 0.97, baseY,
-      x + w, baseY + h * waveFrac * 0.2
-    );
-    ctx.lineTo(x + w, y + h);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  function drawPlaceholderScene(ctx, x, y, w, h) {
+  function drawCameraIcon(ctx, cx, cy, size, color, alpha) {
     ctx.save();
-    roundedRectPath(ctx, x, y, w, h, 14);
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = Math.max(2, size * 0.06);
+    const bodyW = size, bodyH = size * 0.62;
+    const x = cx - bodyW / 2, y = cy - bodyH / 2 + size * 0.1;
+    roundedRectPath(ctx, x, y, bodyW, bodyH, size * 0.14);
+    ctx.stroke();
+    const bw = size * 0.34, bh = size * 0.16;
+    roundedRectPath(ctx, cx - bw / 2, y - bh * 0.75, bw, bh, size * 0.05);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(cx, y + bodyH / 2, size * 0.2, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawPlaceholderSlot(ctx, slot, isDark) {
+    ctx.save();
+    roundedRectPath(ctx, slot.x, slot.y, slot.w, slot.h, 14);
     ctx.clip();
-
-    const sky = ctx.createLinearGradient(0, y, 0, y + h);
-    sky.addColorStop(0, '#bfe3fb');
-    sky.addColorStop(1, '#eef8ff');
-    ctx.fillStyle = sky;
-    ctx.fillRect(x, y, w, h);
-
-    ctx.fillStyle = '#ffffff';
-    drawCloud(ctx, x + w * 0.16, y + h * 0.22, w * 0.075);
-    drawCloud(ctx, x + w * 0.52, y + h * 0.17, w * 0.13);
-
-    ctx.fillStyle = '#c7e28a';
-    drawHill(ctx, x, y, w, h, 0.62, 0.12);
-    ctx.fillStyle = '#8fbf2f';
-    drawHill(ctx, x, y, w, h, 0.74, 0.16);
-
+    const g = ctx.createLinearGradient(slot.x, slot.y, slot.x + slot.w, slot.y + slot.h);
+    if (isDark) {
+      g.addColorStop(0, '#3b7d8f');
+      g.addColorStop(1, '#245261');
+    } else {
+      g.addColorStop(0, '#fff6de');
+      g.addColorStop(1, '#cde9ee');
+    }
+    ctx.fillStyle = g;
+    ctx.fillRect(slot.x, slot.y, slot.w, slot.h);
+    const iconColor = isDark ? '#ffebaf' : '#2c6373';
+    drawCameraIcon(ctx, slot.x + slot.w / 2, slot.y + slot.h / 2, Math.min(slot.w, slot.h) * 0.34, iconColor, 0.55);
     ctx.restore();
   }
 
@@ -200,16 +273,22 @@
     canvas.width = strip.width;
     canvas.height = strip.height;
     const ctx = canvas.getContext('2d');
+    const isDark = strip.theme === 'dark';
 
     const bg = ctx.createLinearGradient(0, 0, strip.width, strip.height);
-    bg.addColorStop(0, '#ffe3ea');
-    bg.addColorStop(0.5, '#fff3e6');
-    bg.addColorStop(1, '#efe6fb');
+    if (isDark) {
+      bg.addColorStop(0, '#2c6373');
+      bg.addColorStop(1, '#4c9db0');
+    } else {
+      bg.addColorStop(0, '#fff6de');
+      bg.addColorStop(1, '#ffebaf');
+    }
     ctx.fillStyle = bg;
     ctx.fillRect(0, 0, strip.width, strip.height);
 
     await ensureBrandFont();
-    ctx.fillStyle = '#4a2f42';
+    const ink = isDark ? '#fff6de' : '#2c6373';
+    ctx.fillStyle = ink;
     ctx.textAlign = 'center';
     ctx.font = '800 34px "Baloo 2", sans-serif';
     ctx.fillText('ForYouBoo', strip.width / 2, 60);
@@ -228,46 +307,18 @@
         ctx.drawImage(tmp, slot.x, slot.y, slot.w, slot.h);
         ctx.restore();
       } else {
-        drawPlaceholderScene(ctx, slot.x, slot.y, slot.w, slot.h);
+        drawPlaceholderSlot(ctx, slot, isDark);
       }
       if (frameImg) {
         ctx.drawImage(frameImg, slot.x, slot.y, slot.w, slot.h);
       }
     }
 
-    ctx.fillStyle = '#4a2f42';
+    ctx.fillStyle = ink;
     ctx.font = '800 30px "Baloo 2", sans-serif';
     ctx.fillText('ForYouBoo', strip.width / 2, strip.height - 42);
 
     return canvas;
-  }
-
-  async function renderIdlePreview() {
-    const stripId = stripSelect.value;
-    const strip = stripId ? strips.find((s) => s.id === stripId) : DEFAULT_STRIP;
-    const frameId = frameSelect.value;
-    const frame = frameId ? frames.find((f) => f.id === frameId) : null;
-
-    let canvas;
-    try {
-      const frameImg = frame ? await loadImage(frame.url) : null;
-      if (strip.url) {
-        const img = await loadImage(strip.url);
-        canvas = document.createElement('canvas');
-        canvas.width = strip.width;
-        canvas.height = strip.height;
-        canvas.getContext('2d').drawImage(img, 0, 0, strip.width, strip.height);
-      } else {
-        canvas = await composeClassicCanvas(strip, null, frameImg);
-      }
-    } catch {
-      return;
-    }
-
-    stripImg.src = canvas.toDataURL('image/png');
-    stripPrint.classList.remove('printing', 'done');
-    stripPrint.classList.add('idle');
-    stripPrint.style.clipPath = 'inset(0 0 0 0)';
   }
 
   // ---------- Camera ----------
@@ -292,9 +343,6 @@
     startCamera();
   });
 
-  stripSelect.addEventListener('change', renderIdlePreview);
-  frameSelect.addEventListener('change', renderIdlePreview);
-
   // ---------- Template loading ----------
 
   async function loadTemplates() {
@@ -305,14 +353,15 @@
     strips = stripsRes;
     frames = framesRes;
 
-    stripSelect.innerHTML = '<option value="">Classic (default)</option>' +
+    stripSelect.innerHTML =
+      '<option value="__light">ForYouBoo · Light</option>' +
+      '<option value="__dark">ForYouBoo · Dark</option>' +
       strips.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
     frameSelect.innerHTML = '<option value="">None</option>' +
       frames.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
 
     renderTemplateGrid('stripGrid', strips, 'strips', true);
     renderTemplateGrid('frameGrid', frames, 'frames', false);
-    renderIdlePreview();
   }
 
   function escapeHtml(s) {
@@ -392,27 +441,6 @@
     loadTemplates();
   });
 
-  // ---------- Navigation ----------
-
-  document.querySelectorAll('.tab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      document.querySelectorAll('.view').forEach((v) => v.classList.add('hidden'));
-      document.getElementById(`view-${btn.dataset.view}`).classList.remove('hidden');
-      if (btn.dataset.view === 'gallery') loadGallery();
-    });
-  });
-
-  document.querySelectorAll('.ttab-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ttab-btn').forEach((b) => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-      document.querySelectorAll('.ttab-panel').forEach((p) => p.classList.add('hidden'));
-      document.getElementById(`panel-${btn.dataset.ttab}`).classList.remove('hidden');
-    });
-  });
-
   async function loadGallery() {
     const grid = document.getElementById('galleryGrid');
     const empty = document.getElementById('galleryEmpty');
@@ -425,7 +453,7 @@
       return;
     }
     empty.classList.add('hidden');
-    grid.innerHTML = items.map((it, i) => `
+    grid.innerHTML = items.map((it) => `
       <a href="#" class="gallery-item" data-url="${it.url}">
         <img src="${it.url}" alt="Photo strip" loading="lazy" />
       </a>
@@ -519,15 +547,11 @@
     busy = true;
     startBtn.disabled = true;
 
-    const stripId = stripSelect.value;
-    const strip = stripId ? strips.find((s) => s.id === stripId) : DEFAULT_STRIP;
+    const strip = getSelectedStrip();
     const frameId = frameSelect.value;
     const frame = frameId ? frames.find((f) => f.id === frameId) : null;
     const frameImg = frame ? await loadImage(frame.url) : null;
 
-    resultActions.classList.add('hidden');
-    stripPrint.classList.remove('idle', 'printing', 'done');
-    stripPrint.style.clipPath = 'inset(0 0 100% 0)';
     buildShotProgress(strip.photoCount);
 
     const shots = [];
@@ -576,6 +600,11 @@
     stripImg.src = dataUrl;
     currentStripUrl = dataUrl;
 
+    showView('result');
+    resultActions.classList.add('hidden');
+    stripPrint.classList.remove('idle', 'printing', 'done');
+    stripPrint.style.clipPath = 'inset(0 0 100% 0)';
+
     // "Print" animation: paper slides out of the printer slot.
     await sleep(100);
     stripPrint.classList.add('printing');
@@ -608,11 +637,13 @@
   retakeBtn.addEventListener('click', () => {
     resultActions.classList.add('hidden');
     shotProgressEl.innerHTML = '';
-    renderIdlePreview();
+    showView('camera');
+    startCamera();
   });
 
   // ---------- Init ----------
 
-  startCamera();
+  showView('landing');
+  initParallax();
   loadTemplates();
 })();

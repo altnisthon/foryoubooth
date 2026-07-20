@@ -1,9 +1,12 @@
-# foryoubooth
+# ForYouBoo
 
-A photobooth-style web app: live camera preview, a 3-2-1 countdown session, a
-composited photo strip that "prints" out with a slide-out animation, and
-downloadable results. Strip backgrounds and per-photo overlays are templates
-you upload and manage yourself — no code changes needed.
+A photobooth-style web app with a proper flow: a parallax landing page →
+tap **Click to Start** → a full-screen iOS-camera-style capture session
+(3-2-1 countdown, 4 shots) → a dedicated result screen where the strip
+"prints" out with a slide-out animation. Strip backgrounds and per-photo
+overlays are templates you upload and manage yourself — no code changes
+needed. Two built-in strip themes (Light and Dark) use the brand's Vanilla
+(#FFEBAF) / Moonstone (#4C9DB0) palette.
 
 Runs great on a laptop or phone browser. Templates and saved strips are
 stored in [Vercel Blob](https://vercel.com/docs/storage/vercel-blob), so they
@@ -41,7 +44,7 @@ git push -u origin main
 
 ## Owner access (Templates + Gallery)
 
-Regular visitors only ever see the **Booth** tab — take photos, download the strip, done. Managing templates and browsing past strips is locked to you:
+Regular visitors only ever see the landing page and the photo-taking flow — take photos, download the strip, done. Managing templates and browsing past strips is locked to you:
 
 1. Visit your site with `?admin=1` appended, e.g. `https://yourapp.vercel.app/?admin=1`.
 2. Enter the `ADMIN_PASSWORD` you set in Vercel.
