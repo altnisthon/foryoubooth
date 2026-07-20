@@ -15,8 +15,8 @@
       </div>
       <nav class="tabs" role="tablist">
         <button class="tab-btn is-active" data-view="booth">Booth</button>
-        <button class="tab-btn" data-view="gallery">Gallery</button>
-        <button class="tab-btn" data-view="templates">Templates</button>
+        <button class="tab-btn admin-tab hidden" data-view="gallery">Gallery</button>
+        <button class="tab-btn admin-tab hidden" data-view="templates">Templates</button>
       </nav>
     </header>
 
@@ -118,6 +118,19 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div class="modal-overlay hidden" id="authModal">
+    <div class="modal-card">
+      <h3>Owner access</h3>
+      <p class="hint">Enter the owner password to manage templates and view the gallery.</p>
+      <input type="password" id="authPasswordInput" placeholder="Password" autocomplete="current-password" />
+      <p class="auth-error hidden" id="authError">Incorrect password.</p>
+      <div class="modal-actions">
+        <button id="authCancelBtn" class="btn-secondary">Cancel</button>
+        <button id="authSubmitBtn" class="btn-primary">Unlock</button>
+      </div>
+    </div>
   </div>
 
   <script src="app.js"></script>

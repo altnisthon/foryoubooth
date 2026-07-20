@@ -17,6 +17,79 @@
   const downloadBtn = document.getElementById('downloadBtn');
   const retakeBtn = document.getElementById('retakeBtn');
 
+  const authModal = document.getElementById('authModal');
+  const authPasswordInput = document.getElementById('authPasswordInput');
+  const authError = document.getElementById('authError');
+  const authCancelBtn = document.getElementById('authCancelBtn');
+  const authSubmitBtn = document.getElementById('authSubmitBtn');
+
+  // ---------- Owner access ----------
+
+  const AUTH_STORAGE_KEY = 'snapbooth_admin_pw';
+  let adminPw = localStorage.getItem(AUTH_STORAGE_KEY) || null;
+
+  function isAdmin() { return !!adminPw; }
+
+  function revealAdminTabs() {
+    document.querySelectorAll('.admin-tab').forEach((b) => b.classList.remove('hidden'));
+  }
+
+  function openAuthModal() {
+    authError.classList.add('hidden');
+    authPasswordInput.value = '';
+    authModal.classList.remove('hidden');
+    authPasswordInput.focus();
+  }
+  function closeAuthModal() {
+    authModal.classList.add('hidden');
+  }
+
+  async function trySubmitAuth() {
+    const pw = authPasswordInput.value;
+    if (!pw) return;
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw }),
+    });
+    if (res.ok) {
+      adminPw = pw;
+      localStorage.setItem(AUTH_STORAGE_KEY, pw);
+      revealAdminTabs();
+      closeAuthModal();
+      const templatesTab = document.querySelector('.tab-btn[data-view="templates"]');
+      if (templatesTab) templatesTab.click();
+    } else {
+      authError.classList.remove('hidden');
+    }
+  }
+
+  authSubmitBtn.addEventListener('click', trySubmitAuth);
+  authCancelBtn.addEventListener('click', closeAuthModal);
+  authPasswordInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') trySubmitAuth();
+  });
+
+  function handleAdminUnauthorized() {
+    adminPw = null;
+    localStorage.removeItem(AUTH_STORAGE_KEY);
+    document.querySelectorAll('.admin-tab').forEach((b) => b.classList.add('hidden'));
+    const boothTab = document.querySelector('.tab-btn[data-view="booth"]');
+    if (boothTab) boothTab.click();
+    alert('Owner session expired or password changed. Reopen with ?admin=1 to unlock again.');
+  }
+
+  function adminFetch(url, opts = {}) {
+    const headers = { ...(opts.headers || {}), 'x-admin-password': adminPw || '' };
+    return fetch(url, { ...opts, headers });
+  }
+
+  if (isAdmin()) revealAdminTabs();
+  if (new URLSearchParams(location.search).get('admin') === '1') {
+    history.replaceState(null, '', location.pathname);
+    openAuthModal();
+  }
+
   const DEFAULT_STRIP = {
     id: '',
     name: 'Classic',
@@ -111,7 +184,8 @@
         const cardKind = card.dataset.kind;
         const id = card.dataset.id;
         if (!confirm('Delete this template?')) return;
-        await fetch(`/api/${cardKind}/${id}`, { method: 'DELETE' });
+        const res = await adminFetch(`/api/${cardKind}/${id}`, { method: 'DELETE' });
+        if (res.status === 401) return handleAdminUnauthorized();
         loadTemplates();
       });
     });
@@ -137,11 +211,12 @@
     for (const key of ['name', 'width', 'height', 'photoCount', 'marginX', 'marginTop', 'marginBottom', 'gap']) {
       payload[key] = fd.get(key);
     }
-    await fetch('/api/strips', {
+    const res = await adminFetch('/api/strips', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
+    if (res.status === 401) return handleAdminUnauthorized();
     form.reset();
     loadTemplates();
   });
@@ -153,11 +228,12 @@
     const imageFile = fd.get('image');
     if (!imageFile || !imageFile.size) return;
     const imageDataUrl = await fileToDataUrl(imageFile);
-    await fetch('/api/frames', {
+    const res = await adminFetch('/api/frames', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: fd.get('name'), imageDataUrl }),
     });
+    if (res.status === 401) return handleAdminUnauthorized();
     form.reset();
     loadTemplates();
   });
@@ -186,7 +262,9 @@
   async function loadGallery() {
     const grid = document.getElementById('galleryGrid');
     const empty = document.getElementById('galleryEmpty');
-    const items = await fetch('/api/photos').then((r) => r.json());
+    const res = await adminFetch('/api/photos');
+    if (res.status === 401) return handleAdminUnauthorized();
+    const items = await res.json();
     if (!items.length) {
       grid.innerHTML = '';
       empty.classList.remove('hidden');

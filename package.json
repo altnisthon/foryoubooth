@@ -4,10 +4,12 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "start": "node server.js"
+    "dev": "node dev/localserver.js"
   },
   "dependencies": {
-    "@vercel/blob": "^2.6.1",
+    "@vercel/blob": "^2.6.1"
+  },
+  "devDependencies": {
     "dotenv": "^17.4.2",
     "express": "^4.19.2"
   }

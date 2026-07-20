@@ -392,3 +392,43 @@ html, body {
   cursor: pointer;
 }
 .template-card .tc-del:hover { color: var(--accent-ink); border-color: var(--accent); background: var(--panel-3); }
+
+/* ---------- AUTH MODAL ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(74, 68, 88, 0.35);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+}
+
+.modal-card {
+  background: var(--panel);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  padding: 26px;
+  width: 100%;
+  max-width: 340px;
+}
+.modal-card h3 { margin: 0 0 6px; color: var(--accent-ink); }
+
+.modal-card input[type="password"] {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 11px 13px;
+  border-radius: 12px;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.auth-error { color: #c05a72; font-size: 13px; margin: 10px 0 0; }
+
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
