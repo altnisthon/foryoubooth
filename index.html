@@ -6,7 +6,7 @@
 <title>ForYouBoo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Space+Mono:wght@400;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -26,57 +26,44 @@
     <main>
       <!-- LANDING VIEW -->
       <section class="view landing" id="view-landing">
-        <div class="parallax-bg" id="parallaxBg">
-          <span class="blob blob-a" data-speed="0.18"></span>
-          <span class="blob blob-b" data-speed="0.34"></span>
-          <span class="blob blob-c" data-speed="0.5"></span>
-        </div>
+        <div class="landing-bg" data-speed="0.08"></div>
+        <div class="landing-scrim"></div>
 
-        <div class="hero">
-          <div class="hero-card">
-            <div class="hero-row">
-              <svg class="hero-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="6" y="20" width="52" height="34" rx="8" stroke="currentColor" stroke-width="3.5"/>
-                <rect x="20" y="12" width="16" height="10" rx="3" stroke="currentColor" stroke-width="3.5"/>
-                <circle cx="32" cy="37" r="11" stroke="currentColor" stroke-width="3.5"/>
-                <circle cx="48" cy="28" r="2.4" fill="currentColor"/>
-              </svg>
+        <img class="sticker sticker-cam1" src="assets/camera1.png" alt="" data-speed="0.22" />
+        <img class="sticker sticker-cam2" src="assets/camera2.png" alt="" data-speed="0.32" />
+        <img class="sticker sticker-cassette" src="assets/cassette.png" alt="" data-speed="0.16" />
+        <img class="sticker sticker-vinyl" src="assets/vinyl.png" alt="" data-speed="0.4" />
 
-              <h1 class="hero-title">ForYouBoo</h1>
+        <div class="poster">
+          <h1 class="poster-title">ForYouBoo</h1>
+          <p class="poster-meta">just for you made by me<br />SG<br />2026</p>
 
-              <svg class="hero-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="10" y="8" width="24" height="48" rx="4" transform="rotate(-8 10 8)" stroke="currentColor" stroke-width="3.5"/>
-                <rect x="28" y="14" width="24" height="48" rx="4" transform="rotate(6 28 14)" stroke="currentColor" stroke-width="3.5"/>
-              </svg>
-            </div>
-
-            <div class="marquee">
-              <div class="marquee-track">
-                <span>made just for you&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-                <span>made just for you&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-                <span>made just for you&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-                <span>made just for you&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-                <span>made just for you&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-                <span>made just for you&nbsp;&nbsp;•&nbsp;&nbsp;</span>
-              </div>
-            </div>
+          <div class="filmstrip" aria-hidden="true">
+            <div class="filmstrip-frame"><span class="sparkle">✦</span></div>
+            <div class="filmstrip-frame"><span class="sparkle">✦</span></div>
+            <div class="filmstrip-frame"><span class="sparkle">✦</span></div>
           </div>
 
+          <button id="enterBoothBtn" class="btn-cta">Click to Start</button>
+
           <div class="hero-pickers">
-            <div class="picker picker-light">
+            <div class="picker picker-dark">
               <label>Strip design</label>
               <select id="stripSelect"></select>
             </div>
-            <div class="picker picker-light">
+            <div class="picker picker-dark">
               <label>Photo overlay</label>
               <select id="frameSelect"><option value="">None</option></select>
             </div>
           </div>
-
-          <button id="enterBoothBtn" class="btn-cta">Click to Start</button>
         </div>
 
-        <p class="hero-footer">made just for you, made by me · SG · 2026</p>
+        <div class="poster-captions">
+          <p class="caption-line">life is a little blurry</p>
+          <p class="caption-line">low quality pics of high quality peeps</p>
+        </div>
+
+        <p class="poster-welcome"><span class="script">welcome to my</span> <span class="bold-italic">boo</span> <span class="hearts">♡ ♡</span></p>
       </section>
 
       <!-- CAMERA VIEW (iOS-style full screen) -->

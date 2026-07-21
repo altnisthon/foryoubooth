@@ -140,13 +140,13 @@
   // ---------- Parallax ----------
 
   function initParallax() {
-    const blobs = document.querySelectorAll('.blob');
+    const layers = document.querySelectorAll('.landing-bg, .sticker');
     let ticking = false;
     function apply() {
       const y = window.scrollY;
-      blobs.forEach((b) => {
-        const speed = parseFloat(b.dataset.speed) || 0.2;
-        b.style.transform = `translateY(${y * speed}px)`;
+      layers.forEach((el) => {
+        const speed = parseFloat(el.dataset.speed) || 0.2;
+        el.style.setProperty('--parallax-y', `${y * speed}px`);
       });
       ticking = false;
     }
@@ -164,10 +164,10 @@
         const rect = hero.getBoundingClientRect();
         const relX = (e.clientX - rect.left) / rect.width - 0.5;
         const relY = (e.clientY - rect.top) / rect.height - 0.5;
-        blobs.forEach((b, i) => {
-          const strength = (i + 1) * 8;
-          b.style.marginLeft = `${relX * strength}px`;
-          b.style.marginTop = `${relY * strength}px`;
+        layers.forEach((el, i) => {
+          const strength = (i + 1) * 6;
+          el.style.setProperty('--parallax-x', `${relX * strength}px`);
+          el.style.setProperty('--parallax-tilt-y', `${relY * strength}px`);
         });
       });
     }
