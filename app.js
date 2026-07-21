@@ -141,6 +141,7 @@
 
   function initParallax() {
     const layers = document.querySelectorAll('.landing-bg, .sticker');
+    const scrollStrip = document.getElementById('scrollStrip');
     let ticking = false;
     function apply() {
       const y = window.scrollY;
@@ -148,6 +149,17 @@
         const speed = parseFloat(el.dataset.speed) || 0.2;
         el.style.setProperty('--parallax-y', `${y * speed}px`);
       });
+
+      if (scrollStrip) {
+        // Tied to raw scroll distance (not viewport position) so the strip
+        // always starts tucked into the slot at the top of the page and only
+        // dispenses once the user actually scrolls, however tall the layout is.
+        const REVEAL_DISTANCE = 420;
+        const progress = Math.min(1, Math.max(0, y / REVEAL_DISTANCE));
+        scrollStrip.style.clipPath = `inset(0 0 ${(1 - progress) * 100}% 0)`;
+        scrollStrip.style.transform = `translateY(${(1 - progress) * -14}px)`;
+      }
+
       ticking = false;
     }
     window.addEventListener('scroll', () => {
