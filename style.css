@@ -104,6 +104,11 @@ html, body {
   overflow: hidden;
   color: #fff;
   isolation: isolate;
+  /* Break out of .app's centered max-width so the background and
+     composition are truly full-bleed edge to edge. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 
 .landing-stage {
@@ -180,7 +185,7 @@ html, body {
 .strip-photo {
   display: block;
   width: 100%;
-  clip-path: inset(0 0 100% 0);
+  clip-path: inset(100% 0 0 0);
   filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.4));
   will-change: clip-path, transform;
   transition: clip-path 0.45s cubic-bezier(0.22, 1, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
@@ -339,6 +344,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
 }
 
 /* ---------- CAMERA (iOS style) ---------- */
