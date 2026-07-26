@@ -178,17 +178,42 @@ html, body {
 }
 
 .strip-window {
-  width: clamp(180px, 46vw, 260px);
+  width: clamp(140px, 34vw, 190px);
   overflow: hidden;
 }
 
-.strip-photo {
-  display: block;
+.strip-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3%;
   width: 100%;
+  aspect-ratio: 591 / 1772;
+  background: #fff;
+  border-radius: 10px;
+  padding: 5% 6%;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
   clip-path: inset(100% 0 0 0);
   filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.4));
-  will-change: clip-path, transform;
-  transition: clip-path 0.45s cubic-bezier(0.22, 1, 0.36, 1), transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: clip-path;
+  transition: clip-path 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.strip-card-logo {
+  width: 100%;
+  flex-shrink: 0;
+}
+
+.strip-card-slots {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4%;
+}
+
+.strip-card-slot {
+  flex: 1;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--vanilla-soft), var(--moonstone-soft));
 }
 
 .hero-pickers {
@@ -285,11 +310,12 @@ html, body {
 
   .strip-slot {
     position: absolute;
-    top: 27%;
+    top: 23%;
     left: 50%;
     transform: translateX(-50%);
-    width: 15%;
-    min-width: 190px;
+    width: 9%;
+    min-width: 130px;
+    max-width: 170px;
   }
   .strip-window {
     width: 100%;

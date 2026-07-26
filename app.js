@@ -142,6 +142,31 @@
   function initParallax() {
     const layers = document.querySelectorAll('.landing-bg, .sticker');
     const scrollStrip = document.getElementById('scrollStrip');
+    let topHideStops = [1, 0];
+
+    // Measure the actual rendered position of each photo slot inside the
+    // strip card so the reveal snaps exactly on slot boundaries regardless
+    // of viewport size or CSS proportions. clip-path doesn't affect layout,
+    // so this works even while the card is visually clipped.
+    function measureStripStops() {
+      if (!scrollStrip) return;
+      const slots = scrollStrip.querySelectorAll('.strip-card-slot');
+      if (!slots.length) return;
+      const cardRect = scrollStrip.getBoundingClientRect();
+      if (cardRect.height <= 0) return;
+      const buffer = 0.02;
+      const stops = [1];
+      for (let i = slots.length - 1; i >= 0; i--) {
+        const slotRect = slots[i].getBoundingClientRect();
+        const frac = (slotRect.top - cardRect.top) / cardRect.height;
+        stops.push(Math.max(0, frac - buffer));
+      }
+      stops[stops.length - 1] = 0; // last stop always fully reveals the card
+      topHideStops = stops;
+    }
+
+    measureStripStops();
+
     let ticking = false;
     function apply() {
       const y = window.scrollY;
@@ -151,24 +176,22 @@
       });
 
       if (scrollStrip) {
+        // Re-measure every frame — cheap (4 elements) and removes any
+        // dependency on load/resize event timing lining up correctly.
+        measureStripStops();
         // Tied to raw scroll distance (not viewport position) so the strip
         // always starts tucked into the slot at the top of the page and only
         // dispenses once the user actually scrolls, however tall the layout is.
-        // Reveal snaps whole-frame-by-whole-frame (like paper actually
+        // Reveal snaps whole-slot-by-whole-slot (like paper actually
         // advancing out of a photobooth slot) instead of a smooth continuous
-        // slide that would cut through a frame mid-photo. It comes out
-        // bottom-first: frame 3 (bottom of the strip) appears whole, then
-        // frame 2, then frame 1 last — the top edge stays tucked in the slot
-        // until the very end.
+        // slide that would cut through a photo mid-frame. It comes out
+        // bottom-first: the bottom slot appears whole, then the next one up,
+        // and so on — the top stays tucked in the slot until the very end.
         const REVEAL_DISTANCE = 420;
         const progress = Math.min(1, Math.max(0, y / REVEAL_DISTANCE));
-        // How much to clip from the TOP of assets/strip.png at each step,
-        // derived from the measured top edge of each photo frame (minus a
-        // small buffer) so each stop lands just above a whole frame.
-        const TOP_HIDE_STOPS = [1, 0.61, 0.32, 0];
-        const steps = TOP_HIDE_STOPS.length - 1;
+        const steps = topHideStops.length - 1;
         const stepIndex = progress <= 0 ? 0 : Math.min(steps, Math.ceil(progress * steps));
-        const topHide = TOP_HIDE_STOPS[stepIndex];
+        const topHide = topHideStops[stepIndex];
         scrollStrip.style.clipPath = `inset(${topHide * 100}% 0 0 0)`;
       }
 
