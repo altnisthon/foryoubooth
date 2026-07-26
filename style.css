@@ -101,13 +101,19 @@ html, body {
 .landing {
   position: relative;
   min-height: 150vh;
+  overflow: hidden;
+  color: #fff;
+  isolation: isolate;
+}
+
+.landing-stage {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  overflow: hidden;
+  width: 100%;
   padding: 8vh 20px 60px;
-  color: #fff;
-  isolation: isolate;
 }
 
 .landing-bg {
@@ -245,6 +251,95 @@ html, body {
   margin: 24px 0 0;
   width: clamp(220px, 58vw, 340px);
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
+}
+
+/* ---------- LANDING: DESKTOP composition (matches the reference poster) ---------- */
+
+@media (min-width: 860px) {
+  .landing {
+    min-height: 132vh;
+  }
+
+  .landing-stage {
+    display: block;
+    max-width: 1500px;
+    height: 100vh;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .poster {
+    position: absolute;
+    inset: 0;
+    display: block;
+    max-width: none;
+    width: 100%;
+    text-align: left;
+    margin: 0;
+    gap: 0;
+  }
+
+  .poster-logo {
+    position: absolute;
+    top: 11%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30%;
+    min-width: 280px;
+  }
+
+  .strip-slot {
+    position: absolute;
+    top: 27%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 15%;
+    min-width: 190px;
+  }
+  .strip-slot-mouth,
+  .strip-window {
+    width: 100%;
+  }
+
+  .btn-cta {
+    position: absolute;
+    top: 86%;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+
+  .hero-pickers {
+    position: absolute;
+    top: 94%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30%;
+    min-width: 320px;
+  }
+
+  .poster-captions {
+    position: absolute;
+    top: 80%;
+    left: 4%;
+    width: 22%;
+    min-width: 220px;
+    margin: 0;
+  }
+
+  .poster-welcome {
+    position: absolute;
+    top: 80%;
+    right: 4%;
+    width: 22%;
+    min-width: 240px;
+    margin: 0;
+  }
+
+  .sticker-cam1 { top: -3%; left: -3%; width: 23%; min-width: 260px; }
+  .sticker-cam2 { top: 28%; left: -3%; bottom: auto; width: 24%; min-width: 260px; }
+  .sticker-cassette { top: 26%; right: 10%; width: 16%; min-width: 190px; }
+  .sticker-vinyl { top: -4%; right: -6%; width: 19%; min-width: 210px; }
 }
 
 /* ---------- FULLSCREEN VIEWS (camera / result) ---------- */
