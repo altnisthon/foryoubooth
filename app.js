@@ -154,10 +154,19 @@
         // Tied to raw scroll distance (not viewport position) so the strip
         // always starts tucked into the slot at the top of the page and only
         // dispenses once the user actually scrolls, however tall the layout is.
+        // Reveal snaps whole-frame-by-whole-frame (like paper actually
+        // advancing out of a photobooth slot) instead of a smooth continuous
+        // slide that would cut through a frame mid-photo.
         const REVEAL_DISTANCE = 420;
         const progress = Math.min(1, Math.max(0, y / REVEAL_DISTANCE));
-        scrollStrip.style.clipPath = `inset(0 0 ${(1 - progress) * 100}% 0)`;
-        scrollStrip.style.transform = `translateY(${(1 - progress) * -14}px)`;
+        // Fractional y-position of the bottom edge of each of the 3 photo
+        // frames in assets/strip.png, measured from the source image.
+        const FRAME_STOPS = [0, 0.3, 0.58, 1];
+        const steps = FRAME_STOPS.length - 1;
+        const stepIndex = progress <= 0 ? 0 : Math.min(steps, Math.ceil(progress * steps));
+        const reveal = FRAME_STOPS[stepIndex];
+        scrollStrip.style.clipPath = `inset(0 0 ${(1 - reveal) * 100}% 0)`;
+        scrollStrip.style.transform = `translateY(${(1 - reveal) * -10}px)`;
       }
 
       ticking = false;
