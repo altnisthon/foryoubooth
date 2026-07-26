@@ -27,6 +27,9 @@
   const authCancelBtn = document.getElementById('authCancelBtn');
   const authSubmitBtn = document.getElementById('authSubmitBtn');
 
+  const LAST_STRIP_KEY = 'foryouboo_last_strip';
+  const LAST_FRAME_KEY = 'foryouboo_last_frame';
+
   // ---------- Owner access ----------
 
   const AUTH_STORAGE_KEY = 'foryouboo_admin_pw';
@@ -135,7 +138,10 @@
       liveOverlayEl.classList.add('hidden');
     }
   }
-  frameSelect.addEventListener('change', updateLiveOverlay);
+  frameSelect.addEventListener('change', () => {
+    localStorage.setItem(LAST_FRAME_KEY, frameSelect.value);
+    updateLiveOverlay();
+  });
 
   enterBoothBtn.addEventListener('click', () => {
     showView('camera');
@@ -274,7 +280,10 @@
     scrollStripEl.style.clipPath = `inset(${topHide * 100}% 0 0 0)`;
   }
 
-  stripSelect.addEventListener('change', renderStripPreview);
+  stripSelect.addEventListener('change', () => {
+    localStorage.setItem(LAST_STRIP_KEY, stripSelect.value);
+    renderStripPreview();
+  });
 
   // ---------- Built-in strip themes (Vanilla / Moonstone) ----------
 
@@ -462,6 +471,18 @@
       strips.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
     frameSelect.innerHTML = '<option value="">None</option>' +
       frames.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
+
+    // Whatever you picked last time is remembered as the default going
+    // forward, so a custom uploaded overlay/strip stays selected without
+    // having to re-pick it every visit — no need to bake anything in.
+    const lastStrip = localStorage.getItem(LAST_STRIP_KEY);
+    if (lastStrip && [...stripSelect.options].some((o) => o.value === lastStrip)) {
+      stripSelect.value = lastStrip;
+    }
+    const lastFrame = localStorage.getItem(LAST_FRAME_KEY);
+    if (lastFrame && [...frameSelect.options].some((o) => o.value === lastFrame)) {
+      frameSelect.value = lastFrame;
+    }
 
     renderTemplateGrid('stripGrid', strips, 'strips', true);
     renderTemplateGrid('frameGrid', frames, 'frames', false);
