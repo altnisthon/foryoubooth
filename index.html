@@ -26,47 +26,50 @@
     <main>
       <!-- LANDING VIEW -->
       <section class="view landing" id="view-landing">
-        <div class="landing-bg" data-speed="0.08"></div>
-        <div class="landing-scrim"></div>
+        <div class="landing-pin">
+          <div class="landing-bg"></div>
+          <div class="landing-scrim"></div>
 
-        <div class="landing-stage">
-          <img class="sticker sticker-cam1" src="assets/camera1.png" alt="" data-speed="0.22" />
-          <img class="sticker sticker-cam2" src="assets/camera2.png" alt="" data-speed="0.32" />
-          <img class="sticker sticker-cassette" src="assets/cassette.png" alt="" data-speed="0.16" />
-          <img class="sticker sticker-vinyl" src="assets/vinyl.png" alt="" data-speed="0.4" />
+          <div class="landing-stage">
+            <img class="sticker sticker-cam1" src="assets/camera1.png" alt="" />
+            <img class="sticker sticker-cam2" src="assets/camera2.png" alt="" />
+            <img class="sticker sticker-cassette" src="assets/cassette.png" alt="" />
+            <img class="sticker sticker-vinyl" src="assets/vinyl.png" alt="" />
 
-          <div class="poster">
-            <img class="poster-logo" src="assets/logo.png" alt="ForYouBoo — just for you made by me, SG, 2026" />
+            <div class="poster">
+              <img class="poster-logo" src="assets/logo.png" alt="ForYouBoo — just for you made by me, SG, 2026" />
 
-            <div class="strip-slot" aria-hidden="true">
-              <div class="strip-window">
-                <div class="strip-card strip-card--light" id="scrollStrip"></div>
+              <div class="strip-slot" aria-hidden="true">
+                <div class="strip-window">
+                  <div class="strip-card strip-card--light" id="scrollStrip"></div>
+                </div>
+              </div>
+
+              <button id="enterBoothBtn" class="btn-cta">Click to Start</button>
+
+              <div class="hero-pickers">
+                <div class="picker picker-dark">
+                  <label>Strip design</label>
+                  <select id="stripSelect"></select>
+                </div>
+                <div class="picker picker-dark">
+                  <label>Photo overlay</label>
+                  <select id="frameSelect"><option value="">None</option></select>
+                </div>
               </div>
             </div>
 
-            <button id="enterBoothBtn" class="btn-cta">Click to Start</button>
+            <img class="poster-captions" src="assets/captions.png" alt="life is a little blurry — low quality pics of high quality peeps" />
 
-            <div class="hero-pickers">
-              <div class="picker picker-dark">
-                <label>Strip design</label>
-                <select id="stripSelect"></select>
-              </div>
-              <div class="picker picker-dark">
-                <label>Photo overlay</label>
-                <select id="frameSelect"><option value="">None</option></select>
-              </div>
-            </div>
+            <img class="poster-welcome" src="assets/welcome.png" alt="welcome to my boo" />
           </div>
-
-          <img class="poster-captions" src="assets/captions.png" alt="life is a little blurry — low quality pics of high quality peeps" />
-
-          <img class="poster-welcome" src="assets/welcome.png" alt="welcome to my boo" />
         </div>
       </section>
 
       <!-- CAMERA VIEW (iOS-style full screen) -->
       <section class="view hidden fullscreen-view camera-view" id="view-camera">
         <video id="video" autoplay playsinline muted></video>
+        <img id="liveOverlay" class="camera-overlay-live hidden" alt="" />
         <canvas id="workCanvas" class="hidden"></canvas>
         <div class="flash" id="flash"></div>
         <div class="countdown" id="countdown"></div>

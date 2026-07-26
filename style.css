@@ -100,8 +100,10 @@ html, body {
 
 .landing {
   position: relative;
-  min-height: 150vh;
-  overflow: hidden;
+  /* Tall spacer: gives enough scroll room for the strip's reveal distance
+     (see REVEAL_DISTANCE in app.js) before the pinned section below
+     releases. Height beyond 100vh is the scrollable "runway". */
+  min-height: calc(100vh + 550px);
   color: #fff;
   isolation: isolate;
   /* Break out of .app's centered max-width so the background and
@@ -111,14 +113,23 @@ html, body {
   margin-right: calc(50% - 50vw);
 }
 
+/* Pinned to the viewport for the height of .landing above, so the
+   background/stickers/composition stay perfectly still while the user
+   scrolls — only the strip's clip-path reveal responds to that scroll. */
+.landing-pin {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+
 .landing-stage {
   position: relative;
   z-index: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   width: 100%;
-  padding: 8vh 20px 60px;
+  height: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
 }
 
 .landing-bg {
@@ -126,8 +137,6 @@ html, body {
   inset: -6% -6%;
   z-index: -2;
   background: url("assets/bg.jpg") center / cover no-repeat;
-  will-change: transform;
-  transform: translateY(var(--parallax-y, 0px));
 }
 .landing-scrim {
   position: absolute;
@@ -137,48 +146,52 @@ html, body {
     linear-gradient(180deg, rgba(20, 12, 16, 0.15) 0%, rgba(20, 12, 16, 0.35) 55%, rgba(20, 12, 16, 0.6) 100%);
 }
 
+/* Sizing below uses vh (not vw) units so proportions stay consistent
+   between tall-narrow phones and wide desktops — height is fixed at 100vh
+   by .landing-pin on every device, while width varies enormously, so
+   vw-based sizing would make the same element tiny on a phone and huge on
+   a monitor. Positioning (top/left) percentages are relative to the
+   stage's own box and work the same way regardless. */
+
 .sticker {
   position: absolute;
-  width: clamp(110px, 30vw, 220px);
   filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.35));
   pointer-events: none;
   will-change: transform;
   z-index: 1;
   --rot: 0deg;
-  transform: translate(var(--parallax-x, 0px), calc(var(--parallax-y, 0px) + var(--parallax-tilt-y, 0px))) rotate(var(--rot));
+  transform: translate(var(--parallax-x, 0px), var(--parallax-tilt-y, 0px)) rotate(var(--rot));
 }
-.sticker-cam1 { top: 2%; left: -6%; --rot: -18deg; width: clamp(140px, 40vw, 260px); }
-.sticker-cam2 { bottom: 30%; left: -10%; --rot: 8deg; width: clamp(150px, 42vw, 280px); }
-.sticker-cassette { top: 20%; right: -10%; --rot: 14deg; width: clamp(110px, 32vw, 220px); }
-.sticker-vinyl { top: 40%; right: -14%; --rot: -6deg; width: clamp(100px, 28vw, 200px); }
+.sticker-cam1 { top: 2%; left: -3%; --rot: -18deg; width: clamp(140px, 26vh, 260px); }
+.sticker-cam2 { top: 30%; left: -3%; --rot: 8deg; width: clamp(150px, 27vh, 280px); }
+.sticker-cassette { top: 24%; right: 6%; --rot: 14deg; width: clamp(110px, 18vh, 220px); }
+.sticker-vinyl { top: -2%; right: -6%; --rot: -6deg; width: clamp(100px, 21vh, 210px); }
 
 .poster {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 18px;
-  width: 100%;
-  max-width: 420px;
-  text-align: center;
-  margin-top: 6vh;
 }
 
 .poster-logo {
-  width: clamp(220px, 62vw, 340px);
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(200px, 34vh, 340px);
   filter: drop-shadow(0 4px 18px rgba(0, 0, 0, 0.35));
 }
 
 .strip-slot {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
+  position: absolute;
+  top: 21%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(140px, 19vh, 170px);
 }
 
 .strip-window {
-  width: clamp(180px, 44vw, 240px);
+  width: 100%;
   overflow: hidden;
 }
 
@@ -226,14 +239,40 @@ html, body {
   object-fit: cover;
 }
 
+.btn-cta {
+  position: absolute;
+  top: 83%;
+  left: 50%;
+  background: #fff;
+  color: #1a1310;
+  border: none;
+  padding: 16px 42px;
+  border-radius: 999px;
+  font-family: var(--font-brand);
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  /* Composed into every transform below so hover/active never clobber the
+     centering offset (transform is a single property, not additive). */
+  --btn-center: translateX(-50%);
+  transform: var(--btn-center);
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+}
+.btn-cta:hover { transform: var(--btn-center) translateY(-2px); box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4); }
+.btn-cta:active { transform: var(--btn-center) scale(0.96); }
+
 .hero-pickers {
-  width: 100%;
+  position: absolute;
+  top: 91%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(240px, 40vh, 340px);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-}
-@media (max-width: 420px) {
-  .hero-pickers { grid-template-columns: 1fr; }
 }
 
 .picker { display: flex; flex-direction: column; gap: 6px; font-family: "Space Mono", monospace; font-size: 10px; color: rgba(255, 255, 255, 0.75); font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -248,133 +287,22 @@ html, body {
 }
 .picker-dark select { background: rgba(255, 255, 255, 0.85); }
 
-.btn-cta {
-  background: #fff;
-  color: #1a1310;
-  border: none;
-  padding: 16px 42px;
-  border-radius: 999px;
-  font-family: var(--font-brand);
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
-  /* --btn-center is empty at mobile and set to translateX(-50%) inside the
-     desktop breakpoint below; composing it into every transform here means
-     hover/active states never clobber the centering offset. */
-  --btn-center: ;
-  transform: var(--btn-center);
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
-}
-.btn-cta:hover { transform: var(--btn-center) translateY(-2px); box-shadow: 0 18px 36px rgba(0, 0, 0, 0.4); }
-.btn-cta:active { transform: var(--btn-center) scale(0.96); }
-
 .poster-captions {
-  position: relative;
-  z-index: 2;
-  align-self: flex-start;
-  margin-top: 8vh;
-  width: clamp(220px, 58vw, 320px);
+  position: absolute;
+  top: 78%;
+  left: 4%;
+  width: clamp(150px, 26vh, 320px);
+  max-width: 44vw;
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
 }
 
 .poster-welcome {
-  position: relative;
-  z-index: 2;
-  align-self: flex-end;
-  margin: 24px 0 0;
-  width: clamp(220px, 58vw, 340px);
+  position: absolute;
+  top: 78%;
+  right: 4%;
+  width: clamp(150px, 26vh, 340px);
+  max-width: 44vw;
   filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
-}
-
-/* ---------- LANDING: DESKTOP composition (matches the reference poster) ---------- */
-
-@media (min-width: 860px) {
-  .landing {
-    min-height: 132vh;
-  }
-
-  .landing-stage {
-    display: block;
-    max-width: 1500px;
-    height: 100vh;
-    margin: 0 auto;
-    padding: 0;
-  }
-
-  .poster {
-    position: absolute;
-    inset: 0;
-    display: block;
-    max-width: none;
-    width: 100%;
-    text-align: left;
-    margin: 0;
-    gap: 0;
-  }
-
-  .poster-logo {
-    position: absolute;
-    top: 11%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 30%;
-    min-width: 280px;
-  }
-
-  .strip-slot {
-    position: absolute;
-    top: 19%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 9.5%;
-    min-width: 145px;
-    max-width: 170px;
-  }
-  .strip-window {
-    width: 100%;
-  }
-
-  .btn-cta {
-    position: absolute;
-    top: 86%;
-    left: 50%;
-    --btn-center: translateX(-50%);
-    white-space: nowrap;
-  }
-
-  .hero-pickers {
-    position: absolute;
-    top: 94%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 30%;
-    min-width: 320px;
-  }
-
-  .poster-captions {
-    position: absolute;
-    top: 80%;
-    left: 4%;
-    width: 22%;
-    min-width: 220px;
-    margin: 0;
-  }
-
-  .poster-welcome {
-    position: absolute;
-    top: 80%;
-    right: 4%;
-    width: 22%;
-    min-width: 240px;
-    margin: 0;
-  }
-
-  .sticker-cam1 { top: -3%; left: -3%; width: 23%; min-width: 260px; }
-  .sticker-cam2 { top: 28%; left: -3%; bottom: auto; width: 24%; min-width: 260px; }
-  .sticker-cassette { top: 26%; right: 10%; width: 16%; min-width: 190px; }
-  .sticker-vinyl { top: -4%; right: -6%; width: 19%; min-width: 210px; }
 }
 
 /* ---------- FULLSCREEN VIEWS (camera / result) ---------- */
@@ -406,6 +334,16 @@ html, body {
   height: 100%;
   object-fit: cover;
   transform: scaleX(-1);
+}
+
+.camera-overlay-live {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .flash {

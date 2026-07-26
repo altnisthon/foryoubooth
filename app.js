@@ -1,6 +1,7 @@
 (() => {
   const topbar = document.getElementById('topbar');
   const video = document.getElementById('video');
+  const liveOverlayEl = document.getElementById('liveOverlay');
   const workCanvas = document.getElementById('workCanvas');
   const workCtx = workCanvas.getContext('2d');
   const flashEl = document.getElementById('flash');
@@ -121,9 +122,25 @@
     });
   });
 
+  // Shows the selected photo overlay live on top of the camera feed while
+  // posing/shooting, not just baked into the final photo after the fact.
+  function updateLiveOverlay() {
+    const frameId = frameSelect.value;
+    const frame = frameId ? frames.find((f) => f.id === frameId) : null;
+    if (frame) {
+      liveOverlayEl.src = frame.url;
+      liveOverlayEl.classList.remove('hidden');
+    } else {
+      liveOverlayEl.removeAttribute('src');
+      liveOverlayEl.classList.add('hidden');
+    }
+  }
+  frameSelect.addEventListener('change', updateLiveOverlay);
+
   enterBoothBtn.addEventListener('click', () => {
     showView('camera');
     startCamera();
+    updateLiveOverlay();
     shotProgressEl.innerHTML = '';
     startBtn.disabled = false;
   });
@@ -142,15 +159,11 @@
   const scrollStripEl = document.getElementById('scrollStrip');
 
   function initParallax() {
-    const layers = document.querySelectorAll('.landing-bg, .sticker');
-
+    // The landing section is a sticky-pinned 100vh view (see .landing-pin),
+    // so the background and stickers stay perfectly still on scroll — only
+    // the strip's clip-path reveal (updateStripClip) responds to it.
     let ticking = false;
     function apply() {
-      const y = window.scrollY;
-      layers.forEach((el) => {
-        const speed = parseFloat(el.dataset.speed) || 0.2;
-        el.style.setProperty('--parallax-y', `${y * speed}px`);
-      });
       updateStripClip();
       ticking = false;
     }
@@ -162,7 +175,10 @@
     }, { passive: true });
     apply();
 
-    const hero = document.querySelector('.landing');
+    // Subtle mouse-tilt on desktop for a bit of depth/delight (unrelated to
+    // scroll — the layers themselves don't move on scroll anymore).
+    const layers = document.querySelectorAll('.landing-bg, .sticker');
+    const hero = document.querySelector('.landing-pin');
     if (hero && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
       hero.addEventListener('mousemove', (e) => {
         const rect = hero.getBoundingClientRect();
