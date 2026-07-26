@@ -139,33 +139,10 @@
 
   // ---------- Parallax ----------
 
+  const scrollStripEl = document.getElementById('scrollStrip');
+
   function initParallax() {
     const layers = document.querySelectorAll('.landing-bg, .sticker');
-    const scrollStrip = document.getElementById('scrollStrip');
-    let topHideStops = [1, 0];
-
-    // Measure the actual rendered position of each photo slot inside the
-    // strip card so the reveal snaps exactly on slot boundaries regardless
-    // of viewport size or CSS proportions. clip-path doesn't affect layout,
-    // so this works even while the card is visually clipped.
-    function measureStripStops() {
-      if (!scrollStrip) return;
-      const slots = scrollStrip.querySelectorAll('.strip-card-slot');
-      if (!slots.length) return;
-      const cardRect = scrollStrip.getBoundingClientRect();
-      if (cardRect.height <= 0) return;
-      const buffer = 0.02;
-      const stops = [1];
-      for (let i = slots.length - 1; i >= 0; i--) {
-        const slotRect = slots[i].getBoundingClientRect();
-        const frac = (slotRect.top - cardRect.top) / cardRect.height;
-        stops.push(Math.max(0, frac - buffer));
-      }
-      stops[stops.length - 1] = 0; // last stop always fully reveals the card
-      topHideStops = stops;
-    }
-
-    measureStripStops();
 
     let ticking = false;
     function apply() {
@@ -174,27 +151,7 @@
         const speed = parseFloat(el.dataset.speed) || 0.2;
         el.style.setProperty('--parallax-y', `${y * speed}px`);
       });
-
-      if (scrollStrip) {
-        // Re-measure every frame — cheap (4 elements) and removes any
-        // dependency on load/resize event timing lining up correctly.
-        measureStripStops();
-        // Tied to raw scroll distance (not viewport position) so the strip
-        // always starts tucked into the slot at the top of the page and only
-        // dispenses once the user actually scrolls, however tall the layout is.
-        // Reveal snaps whole-slot-by-whole-slot (like paper actually
-        // advancing out of a photobooth slot) instead of a smooth continuous
-        // slide that would cut through a photo mid-frame. It comes out
-        // bottom-first: the bottom slot appears whole, then the next one up,
-        // and so on — the top stays tucked in the slot until the very end.
-        const REVEAL_DISTANCE = 420;
-        const progress = Math.min(1, Math.max(0, y / REVEAL_DISTANCE));
-        const steps = topHideStops.length - 1;
-        const stepIndex = progress <= 0 ? 0 : Math.min(steps, Math.ceil(progress * steps));
-        const topHide = topHideStops[stepIndex];
-        scrollStrip.style.clipPath = `inset(${topHide * 100}% 0 0 0)`;
-      }
-
+      updateStripClip();
       ticking = false;
     }
     window.addEventListener('scroll', () => {
@@ -219,6 +176,89 @@
       });
     }
   }
+
+  // ---------- Landing strip preview (scroll-reveal placeholder) ----------
+  //
+  // Reflects whichever design is chosen in the "Strip design" picker: the
+  // built-in Light/Dark placeholder card, or a custom template uploaded via
+  // Templates → Strip designs (shown as the owner's actual uploaded image).
+
+  function renderStripPreview() {
+    if (!scrollStripEl) return;
+    const strip = getSelectedStrip();
+    scrollStripEl.classList.remove('strip-card--light', 'strip-card--dark', 'strip-card--custom');
+
+    if (strip.url) {
+      scrollStripEl.classList.add('strip-card--custom');
+      scrollStripEl.style.aspectRatio = `${strip.width} / ${strip.height}`;
+      scrollStripEl.innerHTML = `<img class="strip-card-custom-img" src="${strip.url}" alt="" />`;
+    } else {
+      const isDark = strip.theme === 'dark';
+      scrollStripEl.classList.add(isDark ? 'strip-card--dark' : 'strip-card--light');
+      scrollStripEl.style.aspectRatio = '591 / 1772';
+      const logoSrc = isDark ? 'assets/logo.png' : 'assets/logo-dark.png';
+      const slotsHtml = Array.from({ length: strip.photoCount || 4 }, () => '<div class="strip-card-slot"></div>').join('');
+      scrollStripEl.innerHTML =
+        `<img class="strip-card-logo" src="${logoSrc}" alt="" />` +
+        `<div class="strip-card-slots">${slotsHtml}</div>` +
+        `<img class="strip-card-logo" src="${logoSrc}" alt="" />`;
+    }
+    updateStripClip();
+  }
+
+  // Measures where each photo slot actually sits (from the uploaded
+  // template's own slot data, or by measuring the built-in card's rendered
+  // DOM) so the reveal snaps exactly on slot boundaries regardless of
+  // viewport size or template proportions.
+  function computeTopHideStops() {
+    const buffer = 0.02;
+    const strip = getSelectedStrip();
+
+    if (strip.url && Array.isArray(strip.slots) && strip.slots.length && strip.height) {
+      const stops = [1];
+      for (let i = strip.slots.length - 1; i >= 0; i--) {
+        const frac = strip.slots[i].y / strip.height;
+        stops.push(Math.max(0, frac - buffer));
+      }
+      stops[stops.length - 1] = 0;
+      return stops;
+    }
+
+    if (!scrollStripEl) return [1, 0];
+    const slots = scrollStripEl.querySelectorAll('.strip-card-slot');
+    if (!slots.length) return [1, 0];
+    const cardRect = scrollStripEl.getBoundingClientRect();
+    if (cardRect.height <= 0) return [1, 0];
+    const stops = [1];
+    for (let i = slots.length - 1; i >= 0; i--) {
+      const slotRect = slots[i].getBoundingClientRect();
+      const frac = (slotRect.top - cardRect.top) / cardRect.height;
+      stops.push(Math.max(0, frac - buffer));
+    }
+    stops[stops.length - 1] = 0;
+    return stops;
+  }
+
+  function updateStripClip() {
+    if (!scrollStripEl) return;
+    // Tied to raw scroll distance (not viewport position) so the strip
+    // always starts tucked into the slot at the top of the page and only
+    // dispenses once the user actually scrolls, however tall the layout is.
+    // Reveal snaps whole-slot-by-whole-slot (like paper actually advancing
+    // out of a photobooth slot) instead of a smooth continuous slide that
+    // would cut through a photo mid-frame. It comes out bottom-first: the
+    // bottom slot appears whole, then the next one up, and so on — the top
+    // stays tucked in the slot until the very end.
+    const REVEAL_DISTANCE = 420;
+    const progress = Math.min(1, Math.max(0, window.scrollY / REVEAL_DISTANCE));
+    const stops = computeTopHideStops();
+    const steps = stops.length - 1;
+    const stepIndex = progress <= 0 ? 0 : Math.min(steps, Math.ceil(progress * steps));
+    const topHide = stops[stepIndex];
+    scrollStripEl.style.clipPath = `inset(${topHide * 100}% 0 0 0)`;
+  }
+
+  stripSelect.addEventListener('change', renderStripPreview);
 
   // ---------- Built-in strip themes (Vanilla / Moonstone) ----------
 
@@ -409,6 +449,7 @@
 
     renderTemplateGrid('stripGrid', strips, 'strips', true);
     renderTemplateGrid('frameGrid', frames, 'frames', false);
+    renderStripPreview();
   }
 
   function escapeHtml(s) {

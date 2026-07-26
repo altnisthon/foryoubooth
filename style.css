@@ -188,13 +188,16 @@ html, body {
   gap: 2%;
   width: 100%;
   aspect-ratio: 591 / 1772;
-  background: #fff;
   padding: 4% 5%;
   clip-path: inset(100% 0 0 0);
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.28));
   will-change: clip-path;
   transition: clip-path 0.45s cubic-bezier(0.22, 1, 0.36, 1);
 }
+
+.strip-card--light { background: #fff; }
+.strip-card--dark { background: var(--moonstone-deep); }
+.strip-card--custom { padding: 0; }
 
 .strip-card-logo {
   width: 100%;
@@ -211,6 +214,16 @@ html, body {
 .strip-card-slot {
   flex: 1;
   background: linear-gradient(135deg, var(--vanilla-soft), var(--moonstone-soft));
+}
+.strip-card--dark .strip-card-slot {
+  background: linear-gradient(135deg, var(--moonstone), var(--moonstone-deep));
+}
+
+.strip-card-custom-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .hero-pickers {
