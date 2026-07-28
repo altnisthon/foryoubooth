@@ -127,9 +127,7 @@
 
   // Shows the selected photo overlay live on top of the camera feed while
   // posing/shooting, not just baked into the final photo after the fact.
-  function updateLiveOverlay() {
-    const frameId = frameSelect.value;
-    const frame = frameId ? frames.find((f) => f.id === frameId) : null;
+  function setLiveOverlayFrame(frame) {
     if (frame) {
       liveOverlayEl.src = frame.url;
       liveOverlayEl.classList.remove('hidden');
@@ -137,6 +135,16 @@
       liveOverlayEl.removeAttribute('src');
       liveOverlayEl.classList.add('hidden');
     }
+  }
+
+  function updateLiveOverlay() {
+    const frameId = frameSelect.value;
+    // Cycle mode swaps per shot during the session (see runSession); here,
+    // before a session starts, just preview the first overlay in rotation.
+    const frame = frameId === '__cycle'
+      ? (frames[0] || null)
+      : (frameId ? frames.find((f) => f.id === frameId) : null);
+    setLiveOverlayFrame(frame);
   }
   frameSelect.addEventListener('change', () => {
     localStorage.setItem(LAST_FRAME_KEY, frameSelect.value);
@@ -399,7 +407,7 @@
     ctx.restore();
   }
 
-  async function composeClassicCanvas(strip, shots, frameImg) {
+  async function composeClassicCanvas(strip, shots, frameImgs) {
     const canvas = document.createElement('canvas');
     canvas.width = strip.width;
     canvas.height = strip.height;
@@ -440,8 +448,8 @@
       } else {
         drawPlaceholderSlot(ctx, slot, isDark);
       }
-      if (frameImg) {
-        ctx.drawImage(frameImg, slot.x, slot.y, slot.w, slot.h);
+      if (frameImgs && frameImgs[i]) {
+        ctx.drawImage(frameImgs[i], slot.x, slot.y, slot.w, slot.h);
       }
     }
 
@@ -489,6 +497,7 @@
       '<option value="__dark">ForYouBoo · Dark</option>' +
       strips.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
     frameSelect.innerHTML = '<option value="">None</option>' +
+      '<option value="__cycle">Cycle all overlays (one per photo)</option>' +
       frames.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
 
     // Whatever you picked last time is remembered as the default going
@@ -730,13 +739,29 @@
 
     const strip = getSelectedStrip();
     const frameId = frameSelect.value;
-    const frame = frameId ? frames.find((f) => f.id === frameId) : null;
+    const cycleOverlays = frameId === '__cycle' && frames.length > 0;
+    const frame = (!cycleOverlays && frameId) ? frames.find((f) => f.id === frameId) : null;
     const frameImg = frame ? await loadImage(frame.url) : null;
+    // In cycle mode, shot i uses frames[i % frames.length] — wraps around if
+    // you've uploaded fewer overlays than there are photo slots.
+    const cycleFrameImgs = cycleOverlays ? await Promise.all(frames.map((f) => loadImage(f.url))) : null;
+
+    function shotFrame(i) {
+      if (cycleOverlays) {
+        const idx = i % frames.length;
+        return { entry: frames[idx], img: cycleFrameImgs[idx] };
+      }
+      return { entry: frame, img: frameImg };
+    }
 
     buildShotProgress(strip.photoCount);
 
     const shots = [];
+    const shotFrameImgs = [];
     for (let i = 0; i < strip.photoCount; i++) {
+      const { entry: thisFrameEntry, img: thisFrameImg } = shotFrame(i);
+      setLiveOverlayFrame(thisFrameEntry);
+      shotFrameImgs.push(thisFrameImg);
       markShot(i, 'active');
       await runCountdown(3);
       flashEl.classList.remove('pop');
@@ -769,12 +794,12 @@
         tmp.height = slot.h;
         tmp.getContext('2d').putImageData(shots[i], 0, 0);
         ctx.drawImage(tmp, slot.x, slot.y, slot.w, slot.h);
-        if (frameImg) {
-          ctx.drawImage(frameImg, slot.x, slot.y, slot.w, slot.h);
+        if (shotFrameImgs[i]) {
+          ctx.drawImage(shotFrameImgs[i], slot.x, slot.y, slot.w, slot.h);
         }
       }
     } else {
-      outCanvas = await composeClassicCanvas(strip, shots, frameImg);
+      outCanvas = await composeClassicCanvas(strip, shots, shotFrameImgs);
     }
 
     const dataUrl = outCanvas.toDataURL('image/png');
