@@ -69,10 +69,14 @@
 
       <!-- CAMERA VIEW (iOS-style full screen) -->
       <section class="view hidden fullscreen-view camera-view" id="view-camera">
-        <video id="video" autoplay playsinline muted></video>
-        <img id="liveOverlay" class="camera-overlay-live hidden" alt="" />
+        <div class="camera-frame">
+          <div class="camera-frame-box" id="cameraFrameBox">
+            <video id="video" autoplay playsinline muted></video>
+            <img id="liveOverlay" class="camera-overlay-live hidden" alt="" />
+            <div class="flash" id="flash"></div>
+          </div>
+        </div>
         <canvas id="workCanvas" class="hidden"></canvas>
-        <div class="flash" id="flash"></div>
         <div class="countdown" id="countdown"></div>
 
         <div class="camera-top-bar">

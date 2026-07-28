@@ -143,9 +143,28 @@
     updateLiveOverlay();
   });
 
+  // ---------- Camera framing (matches the crop captureFrame() takes) ----------
+
+  const cameraFrameBox = document.getElementById('cameraFrameBox');
+  const cameraFrameEl = document.querySelector('.camera-frame');
+
+  function fitCameraFrame() {
+    const slot = getSelectedStrip().slots[0];
+    const ratio = slot.w / slot.h;
+    const vw = cameraFrameEl.clientWidth, vh = cameraFrameEl.clientHeight;
+    let w = vh * ratio, h = vh;
+    if (w > vw) { w = vw; h = vw / ratio; }
+    cameraFrameBox.style.width = `${w}px`;
+    cameraFrameBox.style.height = `${h}px`;
+  }
+  window.addEventListener('resize', () => {
+    if (!document.getElementById('view-camera').classList.contains('hidden')) fitCameraFrame();
+  });
+
   enterBoothBtn.addEventListener('click', () => {
     showView('camera');
     startCamera();
+    fitCameraFrame();
     updateLiveOverlay();
     shotProgressEl.innerHTML = '';
     startBtn.disabled = false;
@@ -801,6 +820,7 @@
     shotProgressEl.innerHTML = '';
     showView('camera');
     startCamera();
+    fitCameraFrame();
   });
 
   // ---------- Init ----------

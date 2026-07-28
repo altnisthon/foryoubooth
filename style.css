@@ -328,6 +328,27 @@ html, body {
   padding: 0;
 }
 
+/* The camera crops the raw video feed down to the aspect ratio of a single
+   photo slot before it's captured (see captureFrame in app.js) — this box
+   shows exactly that crop live, sized/positioned via JS (fitCameraFrame),
+   so posing against the live view matches the final photo pixel-for-pixel.
+   Framing an overlay against anything full-screen instead would be
+   inaccurate whenever the slot aspect ratio isn't the same as the phone
+   screen's aspect ratio (it usually isn't). */
+.camera-frame {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.camera-frame-box {
+  position: relative;
+  overflow: hidden;
+}
+
 #video {
   position: absolute;
   inset: 0;
@@ -342,7 +363,10 @@ html, body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* Matches the non-uniform stretch-to-slot used when compositing the
+     final strip (ctx.drawImage(frameImg, slot.x, slot.y, slot.w, slot.h)),
+     so the live preview's overlay placement matches the final photo. */
+  object-fit: fill;
   pointer-events: none;
   z-index: 1;
 }
