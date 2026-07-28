@@ -519,13 +519,48 @@
     });
   }
 
-  function fileToDataUrl(file) {
+  // Vercel's serverless functions hard-cap the request body at 4.5MB, and a
+  // base64 data URL is ~37% bigger than the raw file — a normal phone photo
+  // (often 3-10MB) blows past that easily. Resizing/re-encoding client-side
+  // before upload keeps templates well under that ceiling. PNG overlays keep
+  // their format (transparency matters); strip backgrounds convert to JPEG
+  // since they don't need alpha and compress far better.
+  function resizeImageToDataUrl(file, { maxDim = 1800, mimeType = 'image/jpeg', quality = 0.85 } = {}) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
       reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            const scale = maxDim / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL(mimeType, quality));
+        };
+        img.src = reader.result;
+      };
       reader.readAsDataURL(file);
     });
+  }
+
+  async function handleTemplateUploadError(res, form) {
+    let message = `Upload failed (${res.status}).`;
+    try {
+      const body = await res.json();
+      if (body && body.message) message += ` ${body.message}`;
+      else if (body && body.error) message += ` ${body.error}`;
+    } catch {
+      // response wasn't JSON; keep the generic message
+    }
+    alert(message);
   }
 
   document.getElementById('stripForm').addEventListener('submit', async (e) => {
@@ -534,7 +569,7 @@
     const fd = new FormData(form);
     const imageFile = fd.get('image');
     if (!imageFile || !imageFile.size) return;
-    const imageDataUrl = await fileToDataUrl(imageFile);
+    const imageDataUrl = await resizeImageToDataUrl(imageFile, { maxDim: 1800, mimeType: 'image/jpeg', quality: 0.85 });
     const payload = { imageDataUrl };
     for (const key of ['name', 'width', 'height', 'photoCount', 'marginX', 'marginTop', 'marginBottom', 'gap']) {
       payload[key] = fd.get(key);
@@ -545,6 +580,7 @@
       body: JSON.stringify(payload),
     });
     if (res.status === 401) return handleAdminUnauthorized();
+    if (!res.ok) return handleTemplateUploadError(res, form);
     form.reset();
     loadTemplates();
   });
@@ -555,13 +591,14 @@
     const fd = new FormData(form);
     const imageFile = fd.get('image');
     if (!imageFile || !imageFile.size) return;
-    const imageDataUrl = await fileToDataUrl(imageFile);
+    const imageDataUrl = await resizeImageToDataUrl(imageFile, { maxDim: 1600, mimeType: 'image/png' });
     const res = await adminFetch('/api/frames', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: fd.get('name'), imageDataUrl }),
     });
     if (res.status === 401) return handleAdminUnauthorized();
+    if (!res.ok) return handleTemplateUploadError(res, form);
     form.reset();
     loadTemplates();
   });
