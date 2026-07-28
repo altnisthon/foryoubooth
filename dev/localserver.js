@@ -32,8 +32,10 @@ function withParamAsQuery(handler) {
 }
 
 app.all('/api/frames', require('../api/frames'));
+app.all('/api/frames/reorder', require('../api/frames/reorder'));
 app.all('/api/frames/:id', withParamAsQuery(require('../api/frames/[id]')));
 app.all('/api/strips', require('../api/strips'));
+app.all('/api/strips/reorder', require('../api/strips/reorder'));
 app.all('/api/strips/:id', withParamAsQuery(require('../api/strips/[id]')));
 app.all('/api/photos', require('../api/photos'));
 app.all('/api/auth', require('../api/auth'));

@@ -737,8 +737,9 @@ html, body {
   margin-bottom: 8px;
 }
 .template-card .tc-name { font-size: 13px; font-weight: 700; margin-bottom: 8px; word-break: break-word; color: var(--text); }
+.template-card .tc-actions { display: flex; gap: 6px; }
 .template-card .tc-del {
-  width: 100%;
+  flex: 1;
   border: 1px solid var(--line);
   background: var(--panel-2);
   color: var(--text-dim);
@@ -748,6 +749,18 @@ html, body {
   cursor: pointer;
 }
 .template-card .tc-del:hover { color: var(--accent-ink); border-color: var(--moonstone); background: var(--panel-3); }
+.template-card .tc-move {
+  flex: 0 0 auto;
+  width: 32px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--text-dim);
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.template-card .tc-move:hover:not(:disabled) { color: var(--accent-ink); border-color: var(--moonstone); background: var(--panel-3); }
+.template-card .tc-move:disabled { opacity: 0.3; cursor: not-allowed; }
 
 /* ---------- AUTH MODAL ---------- */
 

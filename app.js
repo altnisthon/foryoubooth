@@ -579,11 +579,15 @@
       grid.innerHTML = '<p class="empty-note">Nothing uploaded yet.</p>';
       return;
     }
-    grid.innerHTML = items.map((it) => `
+    grid.innerHTML = items.map((it, i) => `
       <div class="template-card" data-id="${it.id}" data-kind="${kind}">
         <img src="${it.url}" alt="${escapeHtml(it.name)}" />
         <div class="tc-name">${escapeHtml(it.name)}${isStrip ? ` · ${it.photoCount} shots` : ''}</div>
-        <button class="tc-del">Delete</button>
+        <div class="tc-actions">
+          <button class="tc-move" data-dir="up" title="Move earlier"${i === 0 ? ' disabled' : ''}>↑</button>
+          <button class="tc-move" data-dir="down" title="Move later"${i === items.length - 1 ? ' disabled' : ''}>↓</button>
+          <button class="tc-del">Delete</button>
+        </div>
       </div>
     `).join('');
     grid.querySelectorAll('.tc-del').forEach((btn) => {
@@ -593,6 +597,29 @@
         const id = card.dataset.id;
         if (!confirm('Delete this template?')) return;
         const res = await adminFetch(`/api/${cardKind}/${id}`, { method: 'DELETE' });
+        if (res.status === 401) return handleAdminUnauthorized();
+        loadTemplates();
+      });
+    });
+    // Reordering here is what decides the order shown everywhere else —
+    // the Strip design / Photo overlay pickers and the per-photo overlay
+    // modal all just render whatever order the server returns.
+    grid.querySelectorAll('.tc-move').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const card = e.target.closest('.template-card');
+        const cardKind = card.dataset.kind;
+        const id = card.dataset.id;
+        const list = cardKind === 'strips' ? strips : frames;
+        const idx = list.findIndex((x) => x.id === id);
+        const swapWith = e.target.dataset.dir === 'up' ? idx - 1 : idx + 1;
+        if (idx === -1 || swapWith < 0 || swapWith >= list.length) return;
+        const order = list.map((x) => x.id);
+        [order[idx], order[swapWith]] = [order[swapWith], order[idx]];
+        const res = await adminFetch(`/api/${cardKind}/reorder`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order }),
+        });
         if (res.status === 401) return handleAdminUnauthorized();
         loadTemplates();
       });
