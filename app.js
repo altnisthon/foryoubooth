@@ -108,7 +108,10 @@
   function showView(name) {
     document.querySelectorAll('.view').forEach((v) => v.classList.add('hidden'));
     document.getElementById(`view-${name}`).classList.remove('hidden');
-    topbar.classList.toggle('hidden', name === 'landing');
+    // The topbar only makes sense for the admin-only Gallery/Templates
+    // tabs — the booth flow (landing/camera/result) is meant to be a single
+    // uninterrupted full-screen session with its own back/home controls.
+    topbar.classList.toggle('hidden', BOOTH_VIEWS.has(name));
     document.querySelectorAll('.tab-btn').forEach((b) => {
       const match = b.dataset.view === name || (b.dataset.view === 'landing' && BOOTH_VIEWS.has(name));
       b.classList.toggle('is-active', match);

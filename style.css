@@ -166,7 +166,6 @@ html, body {
 .sticker-cam2 { top: 30%; left: -3%; --rot: 8deg; width: clamp(96px, min(27vh, 34vw), 280px); }
 .sticker-cassette { top: 24%; right: 6%; --rot: 14deg; width: clamp(74px, min(18vh, 26vw), 220px); }
 .sticker-vinyl { top: -2%; right: -6%; --rot: -6deg; width: clamp(68px, min(21vh, 24vw), 210px); }
-.sticker-niki { top: 46%; left: 26%; --rot: -3deg; width: clamp(90px, min(22vh, 28vw), 220px); z-index: 2; }
 
 .poster {
   position: absolute;
@@ -523,9 +522,22 @@ html, body {
 
 /* ---------- RESULT ---------- */
 
-.result-view { flex-direction: column; padding: 40px 20px; gap: 20px; }
+.result-view {
+  position: relative;
+  flex-direction: column;
+  padding: 40px 20px;
+  gap: 20px;
+  background: url("assets/bg.jpg") center / cover no-repeat;
+}
+.result-view::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(180deg, rgba(20, 12, 16, 0.15) 0%, rgba(20, 12, 16, 0.35) 55%, rgba(20, 12, 16, 0.6) 100%);
+}
 
-.printer-column { display: flex; flex-direction: column; gap: 16px; align-items: center; width: 100%; max-width: 420px; }
+.printer-column { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 16px; align-items: center; width: 100%; max-width: 420px; }
 
 .printer {
   position: relative;
@@ -602,6 +614,8 @@ html, body {
   text-underline-offset: 3px;
 }
 .link-btn:hover { color: var(--accent-ink); }
+.result-view .link-btn { position: relative; z-index: 1; color: rgba(255, 255, 255, 0.8); }
+.result-view .link-btn:hover { color: #fff; }
 
 /* ---------- BUTTONS (shared) ---------- */
 
