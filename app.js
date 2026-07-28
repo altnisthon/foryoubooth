@@ -613,8 +613,14 @@
         const idx = list.findIndex((x) => x.id === id);
         const swapWith = e.target.dataset.dir === 'up' ? idx - 1 : idx + 1;
         if (idx === -1 || swapWith < 0 || swapWith >= list.length) return;
+
+        // Reorder the in-memory list and re-render immediately so the
+        // button feels instant instead of waiting on a round trip; the
+        // loadTemplates() call below reconciles with the server after.
+        [list[idx], list[swapWith]] = [list[swapWith], list[idx]];
+        renderTemplateGrid(gridId, list, cardKind, isStrip);
+
         const order = list.map((x) => x.id);
-        [order[idx], order[swapWith]] = [order[swapWith], order[idx]];
         const res = await adminFetch(`/api/${cardKind}/reorder`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

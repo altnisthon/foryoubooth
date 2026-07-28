@@ -5,7 +5,12 @@ async function readIndex(pathname) {
     const { blobs } = await list({ prefix: pathname, limit: 1 });
     const match = blobs.find((b) => b.pathname === pathname);
     if (!match) return [];
-    const res = await fetch(match.url, { cache: 'no-store' });
+    // Vercel's CDN can serve a public blob's previous content for a bit
+    // after it's overwritten (published propagation can take up to ~60s).
+    // The index is small control data queried on every page load, not
+    // large media, so freshness matters far more than caching it — a
+    // unique query string forces a fresh fetch instead of a stale hit.
+    const res = await fetch(`${match.url}?t=${Date.now()}`, { cache: 'no-store' });
     if (!res.ok) return [];
     return await res.json();
   } catch {
@@ -19,6 +24,7 @@ async function writeIndex(pathname, data) {
     contentType: 'application/json',
     addRandomSuffix: false,
     allowOverwrite: true,
+    cacheControlMaxAge: 0,
   });
 }
 
