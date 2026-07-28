@@ -27,8 +27,18 @@
   const authCancelBtn = document.getElementById('authCancelBtn');
   const authSubmitBtn = document.getElementById('authSubmitBtn');
 
+  const perShotEditBtn = document.getElementById('perShotEditBtn');
+  const perShotModal = document.getElementById('perShotModal');
+  const perShotFieldsEl = document.getElementById('perShotFields');
+  const perShotCancelBtn = document.getElementById('perShotCancelBtn');
+  const perShotSaveBtn = document.getElementById('perShotSaveBtn');
+
   const LAST_STRIP_KEY = 'foryouboo_last_strip';
   const LAST_FRAME_KEY = 'foryouboo_last_frame';
+  const PER_SHOT_KEY = 'foryouboo_per_shot_frames';
+
+  let perShotFrameIds = [];
+  try { perShotFrameIds = JSON.parse(localStorage.getItem(PER_SHOT_KEY) || '[]'); } catch { perShotFrameIds = []; }
 
   // ---------- Owner access ----------
 
@@ -139,16 +149,53 @@
 
   function updateLiveOverlay() {
     const frameId = frameSelect.value;
-    // Cycle mode swaps per shot during the session (see runSession); here,
-    // before a session starts, just preview the first overlay in rotation.
-    const frame = frameId === '__cycle'
-      ? (frames[0] || null)
-      : (frameId ? frames.find((f) => f.id === frameId) : null);
+    // Cycle/per-photo modes swap per shot during the session (see
+    // runSession); here, before a session starts, just preview shot 1's.
+    let frame;
+    if (frameId === '__cycle') frame = frames[0] || null;
+    else if (frameId === '__per_shot') frame = frames.find((f) => f.id === perShotFrameIds[0]) || null;
+    else frame = frameId ? frames.find((f) => f.id === frameId) : null;
     setLiveOverlayFrame(frame);
   }
   frameSelect.addEventListener('change', () => {
     localStorage.setItem(LAST_FRAME_KEY, frameSelect.value);
+    perShotEditBtn.classList.toggle('hidden', frameSelect.value !== '__per_shot');
+    if (frameSelect.value === '__per_shot') openPerShotModal();
     updateLiveOverlay();
+  });
+
+  // ---------- Per-photo overlay assignment ----------
+
+  function openPerShotModal() {
+    const strip = getSelectedStrip();
+    perShotFieldsEl.innerHTML = Array.from({ length: strip.photoCount }, (_, i) => {
+      const current = perShotFrameIds[i] || '';
+      const options = ['<option value="">None</option>']
+        .concat(frames.map((f) => `<option value="${f.id}"${f.id === current ? ' selected' : ''}>${escapeHtml(f.name)}</option>`))
+        .join('');
+      return `<label class="per-shot-field">Photo ${i + 1}<select data-shot-index="${i}">${options}</select></label>`;
+    }).join('');
+    perShotModal.classList.remove('hidden');
+  }
+  function closePerShotModal() {
+    perShotModal.classList.add('hidden');
+  }
+  perShotEditBtn.addEventListener('click', openPerShotModal);
+  perShotSaveBtn.addEventListener('click', () => {
+    const selects = perShotFieldsEl.querySelectorAll('select');
+    perShotFrameIds = Array.from(selects).map((s) => s.value);
+    localStorage.setItem(PER_SHOT_KEY, JSON.stringify(perShotFrameIds));
+    closePerShotModal();
+    updateLiveOverlay();
+  });
+  perShotCancelBtn.addEventListener('click', () => {
+    closePerShotModal();
+    if (!perShotFrameIds.length && frameSelect.value === '__per_shot') {
+      frameSelect.value = '';
+      localStorage.setItem(LAST_FRAME_KEY, '');
+      perShotEditBtn.classList.add('hidden');
+      updateLiveOverlay();
+    }
   });
 
   // ---------- Camera framing (matches the crop captureFrame() takes) ----------
@@ -498,6 +545,7 @@
       strips.map((s) => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
     frameSelect.innerHTML = '<option value="">None</option>' +
       '<option value="__cycle">Cycle all overlays (one per photo)</option>' +
+      '<option value="__per_shot">Choose per photo…</option>' +
       frames.map((f) => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('');
 
     // Whatever you picked last time is remembered as the default going
@@ -511,6 +559,7 @@
     if (lastFrame && [...frameSelect.options].some((o) => o.value === lastFrame)) {
       frameSelect.value = lastFrame;
     }
+    perShotEditBtn.classList.toggle('hidden', frameSelect.value !== '__per_shot');
 
     renderTemplateGrid('stripGrid', strips, 'strips', true);
     renderTemplateGrid('frameGrid', frames, 'frames', false);
@@ -740,13 +789,23 @@
     const strip = getSelectedStrip();
     const frameId = frameSelect.value;
     const cycleOverlays = frameId === '__cycle' && frames.length > 0;
-    const frame = (!cycleOverlays && frameId) ? frames.find((f) => f.id === frameId) : null;
+    const perShotMode = frameId === '__per_shot';
+    const frame = (!cycleOverlays && !perShotMode && frameId) ? frames.find((f) => f.id === frameId) : null;
     const frameImg = frame ? await loadImage(frame.url) : null;
     // In cycle mode, shot i uses frames[i % frames.length] — wraps around if
     // you've uploaded fewer overlays than there are photo slots.
     const cycleFrameImgs = cycleOverlays ? await Promise.all(frames.map((f) => loadImage(f.url))) : null;
+    // In per-shot mode, shot i uses whichever overlay was assigned to it in
+    // the "Choose per photo" modal (or none, if left unset).
+    const perShotEntries = perShotMode ? perShotFrameIds.map((id) => frames.find((f) => f.id === id) || null) : null;
+    const perShotImgs = perShotMode
+      ? await Promise.all(perShotEntries.map((f) => (f ? loadImage(f.url) : Promise.resolve(null))))
+      : null;
 
     function shotFrame(i) {
+      if (perShotMode) {
+        return { entry: perShotEntries[i] || null, img: (perShotImgs && perShotImgs[i]) || null };
+      }
       if (cycleOverlays) {
         const idx = i % frames.length;
         return { entry: frames[idx], img: cycleFrameImgs[idx] };

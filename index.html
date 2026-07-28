@@ -55,7 +55,10 @@
                 </div>
                 <div class="picker picker-dark">
                   <label>Photo overlay</label>
-                  <select id="frameSelect"><option value="">None</option></select>
+                  <div class="picker-row">
+                    <select id="frameSelect"><option value="">None</option></select>
+                    <button type="button" id="perShotEditBtn" class="mini-btn hidden" aria-label="Edit per-photo overlays">✎</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -178,6 +181,18 @@
       <div class="modal-actions">
         <button id="authCancelBtn" class="btn-secondary">Cancel</button>
         <button id="authSubmitBtn" class="btn-primary">Unlock</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="perShotModal">
+    <div class="modal-card">
+      <h3>Choose overlay per photo</h3>
+      <p class="hint">Pick which uploaded overlay shows on each shot in the strip.</p>
+      <div id="perShotFields"></div>
+      <div class="modal-actions">
+        <button id="perShotCancelBtn" class="btn-secondary">Cancel</button>
+        <button id="perShotSaveBtn" class="btn-primary">Save</button>
       </div>
     </div>
   </div>
